@@ -25,19 +25,19 @@ var ProviderSet = wire.NewSet(NewStore, wire.Bind(new(IStore), new(*datastore)))
 
 var (
 	once sync.Once
-	// 全局变量，方便其它包直接调用已初始化好的 datastore 实例.
+	// S 全局变量，方便其它包直接调用已初始化好的 datastore 实例.
 	S *datastore
 )
 
 // IStore 定义了 Store 层需要实现的方法.
 type IStore interface {
-	// 返回 Store 层的 *gorm.DB 实例，在少数场景下会被用到.
+	// DB 返回 Store 层的 *gorm.DB 实例，在少数场景下会被用到.
 	DB(ctx context.Context, wheres ...where.Where) *gorm.DB
 	TX(ctx context.Context, fn func(ctx context.Context) error) error
 
 	User() UserStore
 	Post() PostStore
-	// ConcretePosts 是一个示例 store 实现，用来演示在 Go 中如何直接与 DB 交互.
+	// ConcretePost ConcretePosts 是一个示例 store 实现，用来演示在 Go 中如何直接与 DB 交互.
 	ConcretePost() ConcretePostStore
 }
 
@@ -92,17 +92,17 @@ func (store *datastore) TX(ctx context.Context, fn func(ctx context.Context) err
 	)
 }
 
-// Users 返回一个实现了 UserStore 接口的实例.
+// User 返回一个实现了 UserStore 接口的实例.
 func (store *datastore) User() UserStore {
 	return newUserStore(store)
 }
 
-// Posts 返回一个实现了 PostStore 接口的实例.
+// Post 返回一个实现了 PostStore 接口的实例.
 func (store *datastore) Post() PostStore {
 	return newPostStore(store)
 }
 
-// ConcretePosts 返回一个实现了 ConcretePostStore 接口的实例.
+// ConcretePost 返回一个实现了 ConcretePostStore 接口的实例.
 func (store *datastore) ConcretePost() ConcretePostStore {
 	return newConcretePostStore(store)
 }

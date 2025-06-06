@@ -96,7 +96,7 @@ func isValidPhone(phone string) error {
 		return errno.ErrInvalidArgument.WithMessage("phone cannot be empty")
 	}
 
-	// 使用正则表达式校验手机号码格式（假设是中国手机号，11位数字）
+	// 使用正则表达式校验手机号码格式（假设是中国手机号，11 位数字）
 	if !phoneRegex.MatchString(phone) {
 		return errno.ErrInvalidArgument.WithMessage("invalid phone format")
 	}

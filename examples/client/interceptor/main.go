@@ -23,8 +23,7 @@ import (
 
 var (
 	// 定义命令行参数
-	addr  = flag.String("addr", "localhost:6666", "The grpc server address to connect to.") // gRPC 服务的地址
-	limit = flag.Int64("limit", 10, "Limit to list users.")                                 // 限制列出用户的数量
+	addr = flag.String("addr", "localhost:6666", "The grpc server address to connect to.") // gRPC 服务的地址
 )
 
 func main() {
@@ -67,10 +66,11 @@ func main() {
 	fmt.Println(string(jsonData))     // 输出 JSON 数据到终端
 }
 
+// gRPC 一元（Unary）客户端拦截器
 func unaryClientInterceptor() grpc.UnaryClientInterceptor {
 	return func(ctx context.Context,
 		method string,
-		req, reply interface{},
+		req, reply any,
 		cc *grpc.ClientConn,
 		invoker grpc.UnaryInvoker,
 		opts ...grpc.CallOption,

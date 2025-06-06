@@ -31,7 +31,7 @@ type grpcServer struct {
 // 确保 *grpcServer 实现了 server.Server 接口.
 var _ server.Server = (*grpcServer)(nil)
 
-// NewGRPCServerOr 创建并初始化 gRPC 或者 gRPC +  gRPC-Gateway 服务器.
+// NewGRPCServerOr 创建并初始化 gRPC 或者 gRPC + gRPC-Gateway 服务器.
 // 在 Go 项目开发中，NewGRPCServerOr 这个函数命名中的 Or 一般用来表示“或者”的含义，
 // 通常暗示该函数会在两种或多种选择中选择一种可能性。具体的含义需要结合函数的实现
 // 或上下文来理解。以下是一些可能的解释：

@@ -9,9 +9,7 @@ package main
 import (
 	"context"
 	"flag"
-	"fmt"
 	"log"
-	"math/rand"
 	"strings"
 	"time"
 
@@ -179,22 +177,4 @@ func main() {
 	log.Printf("[DeleteUser     ] Success to delete user: %v", createUserResponse.UserID)
 
 	log.Printf("[All            ] Success to test all user api")
-}
-
-// 随机生成一个符合中国大陆手机格式的号码
-func generatePhoneNumber() string {
-	// 手机号码规则：以1开头，第二位为3-9，接下来9位随机数字
-	prefixes := []int{3, 4, 5, 6, 7, 8, 9} // 第二位的合法范围
-	rand.Seed(time.Now().UnixNano())       // 设置随机数种子
-
-	// 随机选择第二位
-	secondDigit := prefixes[rand.Intn(len(prefixes))]
-
-	// 随机生成后9位数字
-	phone := fmt.Sprintf("1%d", secondDigit)
-	for i := 0; i < 9; i++ {
-		phone += fmt.Sprintf("%d", rand.Intn(10))
-	}
-
-	return phone
 }

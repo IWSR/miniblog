@@ -28,11 +28,11 @@ var ProviderSet = wire.NewSet(NewBiz, wire.Bind(new(IBiz), new(*biz)))
 
 // IBiz 定义了业务层需要实现的方法.
 type IBiz interface {
-	// 获取用户业务接口.
+	// UserV1 获取用户业务接口.
 	UserV1() userv1.UserBiz
-	// 获取帖子业务接口.
+	// PostV1 获取帖子业务接口.
 	PostV1() postv1.PostBiz
-	// 获取帖子业务接口（V2版本）.
+	// PostV2 获取帖子业务接口（V2 版本）.
 	// PostV2() post.PostBiz
 }
 

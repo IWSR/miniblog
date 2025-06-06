@@ -13,7 +13,7 @@ import (
 
 // Server 定义所有服务器类型的接口.
 type Server interface {
-	// RunOrDie 运行服务器，如果运行失败会退出程序（OrDie的含义所在）.
+	// RunOrDie 运行服务器，如果运行失败会退出程序（OrDie 的含义所在）.
 	RunOrDie()
 	// GracefulStop 方法用来优雅关停服务器。关停服务器时需要处理 context 的超时时间.
 	GracefulStop(ctx context.Context)

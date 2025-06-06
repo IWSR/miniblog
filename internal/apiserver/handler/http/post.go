@@ -32,7 +32,7 @@ func (h *Handler) GetPost(c *gin.Context) {
 	core.HandleUriRequest(c, h.biz.PostV1().Get, h.val.ValidateGetPostRequest)
 }
 
-// ListPosts 列出用户的所有博客帖子.
+// ListPost 列出用户的所有博客帖子.
 func (h *Handler) ListPost(c *gin.Context) {
 	core.HandleQueryRequest(c, h.biz.PostV1().List, h.val.ValidateListPostRequest)
 }

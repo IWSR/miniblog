@@ -21,7 +21,7 @@ func (h *Handler) RefreshToken(c *gin.Context) {
 	core.HandleJSONRequest(c, h.biz.UserV1().RefreshToken)
 }
 
-// ChangeUserPassword 修改用户密码.
+// ChangePassword 修改用户密码.
 func (h *Handler) ChangePassword(c *gin.Context) {
 	core.HandleJSONRequest(c, h.biz.UserV1().ChangePassword, h.val.ValidateChangePasswordRequest)
 }

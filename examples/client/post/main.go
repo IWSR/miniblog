@@ -18,7 +18,6 @@ import (
 	"google.golang.org/grpc/metadata"
 
 	"github.com/onexstack/miniblog/examples/helper"
-
 	"github.com/onexstack/miniblog/internal/pkg/known"
 	apiv1 "github.com/onexstack/miniblog/pkg/api/apiserver/v1"
 )

@@ -22,8 +22,7 @@ import (
 
 var (
 	// 定义命令行参数
-	addr  = flag.String("addr", "localhost:6666", "The grpc server address to connect to.") // gRPC 服务的地址
-	limit = flag.Int64("limit", 10, "Limit to list users.")                                 // 限制列出用户的数量
+	addr = flag.String("addr", "localhost:6666", "The grpc server address to connect to.") // gRPC 服务的地址
 )
 
 func main() {

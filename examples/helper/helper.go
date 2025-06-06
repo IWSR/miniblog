@@ -25,7 +25,7 @@ func ExampleCreateUserRequest() *apiv1.CreateUserRequest {
 	return &apiv1.CreateUserRequest{
 		Username: fmt.Sprintf("%d", time.Now().Unix()), // 随机生成一个单词作为用户名，并转换为小写
 		Password: "onex(#)666",                         // 设置固定密码
-		Nickname: ptr.To("孔令飞"),                        // 设置固    定昵称
+		Nickname: ptr.To("孔令飞"),                        // 设置固定昵称
 		Email:    "colin404@foxmail.com",               // 设置固定邮箱地址
 		Phone:    GeneratePhoneNumber(),                // 调用 GeneratePhoneNumber 随机生成一个手机号
 	}

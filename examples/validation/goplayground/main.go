@@ -14,7 +14,7 @@ import (
 
 type LoginRequest struct {
 	Username string `validate:"required"`       // 必填字段
-	Password string `validate:"required,min=6"` // 最小长度为6
+	Password string `validate:"required,min=6"` // 最小长度为 6
 	Email    string `validate:"required,email"` // 必填且必须是邮箱格式
 }
 

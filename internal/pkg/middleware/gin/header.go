@@ -21,7 +21,7 @@ func NoCache(c *gin.Context) {
 	c.Next()
 }
 
-// Cors是一个 Gin 中间件，用于处理 CORS 请求.
+// Cors 是一个 Gin 中间件，用于处理 CORS 请求.
 func Cors(c *gin.Context) {
 	// 处理预检请求
 	if c.Request.Method == http.MethodOptions {

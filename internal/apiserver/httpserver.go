@@ -43,7 +43,7 @@ func (c *ServerConfig) NewGinServer() server.Server {
 	return &ginServer{srv: httpsrv}
 }
 
-// 注册 API 路由。路由的路径和 HTTP 方法，严格遵循 REST 规范.
+// InstallRESTAPI 注册 API 路由。路由的路径和 HTTP 方法，严格遵循 REST 规范.
 func (c *ServerConfig) InstallRESTAPI(engine *gin.Engine) {
 	// 注册业务无关的 API 接口
 	InstallGenericAPI(engine)
@@ -59,6 +59,7 @@ func (c *ServerConfig) InstallRESTAPI(engine *gin.Engine) {
 	// 注意：认证中间件要在 handler.RefreshToken 之前加载
 	engine.PUT("/refresh-token", mw.AuthnMiddleware(c.retriever), handler.RefreshToken)
 
+	// 认证和授权中间件
 	authMiddlewares := []gin.HandlerFunc{mw.AuthnMiddleware(c.retriever), mw.AuthzMiddleware(c.authz)}
 
 	// 注册 v1 版本 API 路由分组
@@ -69,16 +70,16 @@ func (c *ServerConfig) InstallRESTAPI(engine *gin.Engine) {
 		{
 			// 创建用户。这里要注意：创建用户是不用进行认证和授权的
 			userv1.POST("", handler.CreateUser)
-			userv1.Use(authMiddlewares...)
+			userv1.Use(authMiddlewares...)                                // 应用中间件。之后的接口需要认证和授权
 			userv1.PUT(":userID/change-password", handler.ChangePassword) // 修改用户密码
 			userv1.PUT(":userID", handler.UpdateUser)                     // 更新用户信息
 			userv1.DELETE(":userID", handler.DeleteUser)                  // 删除用户
 			userv1.GET(":userID", handler.GetUser)                        // 查询用户详情
-			userv1.GET("", handler.ListUser)                              // 查询用户列表.
+			userv1.GET("", handler.ListUser)                              // 查询用户列表
 		}
 
 		// 博客相关路由
-		postv1 := v1.Group("/posts", authMiddlewares...)
+		postv1 := v1.Group("/posts", authMiddlewares...) // 所有博客相关接口都需要认证和授权
 		{
 			postv1.POST("", handler.CreatePost)       // 创建博客
 			postv1.PUT(":postID", handler.UpdatePost) // 更新博客

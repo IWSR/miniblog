@@ -7,6 +7,7 @@
 package main
 
 import (
+	"errors"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -25,7 +26,8 @@ func main() {
 		var req LoginRequest
 		if err := c.ShouldBindJSON(&req); err != nil {
 			// 返回校验错误
-			errs := err.(validator.ValidationErrors)
+			var errs validator.ValidationErrors
+			errors.As(err, &errs)
 			c.JSON(http.StatusBadRequest, gin.H{"error": errs.Error()})
 			return
 		}

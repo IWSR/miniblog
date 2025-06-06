@@ -38,7 +38,7 @@ func WithUsername(ctx context.Context, username string) context.Context {
 	return context.WithValue(ctx, usernameKey{}, username)
 }
 
-// User 从上下文中提取用户名.
+// Username User 从上下文中提取用户名.
 func Username(ctx context.Context) string {
 	username, _ := ctx.Value(usernameKey{}).(string)
 	return username

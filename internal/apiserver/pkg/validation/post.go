@@ -17,7 +17,7 @@ import (
 	apiv1 "github.com/onexstack/miniblog/pkg/api/apiserver/v1"
 )
 
-// Validate 校验字段的有效性.
+// ValidatePostRules 校验字段的有效性.
 func (v *Validator) ValidatePostRules() genericvalidation.Rules {
 	// 定义各字段的校验逻辑，通过一个 map 实现模块化和简化
 	return genericvalidation.Rules{

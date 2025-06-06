@@ -9,6 +9,5 @@
 
 for n in $(seq 1 1 10)
 do
-    nohup curl -XGET curl http://onexstack.com:7777/healthz &>/dev/null
+    nohup curl -XGET http://onexstack.com:7777/healthz &>/dev/null
 done
-

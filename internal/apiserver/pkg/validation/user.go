@@ -65,7 +65,7 @@ func (v *Validator) ValidateUserRules() genericvalidation.Rules {
 	}
 }
 
-// ValidateLogin 校验修改密码请求.
+// ValidateLoginRequest 校验修改密码请求.
 func (v *Validator) ValidateLoginRequest(ctx context.Context, rq *apiv1.LoginRequest) error {
 	return genericvalidation.ValidateAllFields(rq, v.ValidateUserRules())
 }

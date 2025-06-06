@@ -10,9 +10,6 @@ import (
 	"net/http"
 )
 
-func main() {
-}
-
 func ValidationMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Header.Get("X-API-Key") == "" {
@@ -21,4 +18,16 @@ func ValidationMiddleware(next http.Handler) http.Handler {
 		}
 		next.ServeHTTP(w, r)
 	})
+}
+
+func main() {
+	mux := http.NewServeMux()
+	mux.HandleFunc("/ping", func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte("pong"))
+	})
+
+	// 使用中间件
+	handler := ValidationMiddleware(mux)
+
+	http.ListenAndServe(":8080", handler)
 }

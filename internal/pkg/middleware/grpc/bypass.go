@@ -17,13 +17,13 @@ import (
 	"github.com/onexstack/miniblog/internal/pkg/log"
 )
 
-// AuthnBypasswInterceptor 是一个 gRPC 拦截器，模拟所有请求都通过认证。
-func AuthnBypasswInterceptor() grpc.UnaryServerInterceptor {
+// AuthnBypassInterceptor 是一个 gRPC 拦截器，模拟所有请求都通过认证。
+func AuthnBypassInterceptor() grpc.UnaryServerInterceptor {
 	return func(ctx context.Context, req any, _ *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (any, error) {
-		// 从请求头中获取用户ID
-		userID := "user-000001" // 默认用户ID
+		// 从请求头中获取用户 ID
+		userID := "user-000001" // 默认用户 ID
 		if md, ok := metadata.FromIncomingContext(ctx); ok {
-			// 获取header中指定的用户ID，假设Header名为"x-user-id"
+			// 获取 header 中指定的用户 ID，假设 Header 名为 "x-user-id"
 			if values := md.Get(known.XUserID); len(values) > 0 {
 				userID = values[0]
 			}

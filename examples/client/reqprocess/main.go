@@ -24,8 +24,7 @@ import (
 )
 
 var (
-	addr  = flag.String("addr", "localhost:6666", "The grpc server address to connect to.")
-	limit = flag.Int64("limit", 10, "Limit to list users.")
+	addr = flag.String("addr", "localhost:6666", "The grpc server address to connect to.")
 )
 
 func main() {
@@ -88,7 +87,7 @@ func main() {
 	log.Printf("[GetUser        ] Success in testing request parameter default value setting")
 
 	createUserRequest2 := helper.ExampleCreateUserRequest()
-	createUserRequest2.Email = "bad email address" // 不设置 Nickname 字段
+	createUserRequest2.Email = "bad email address" // 不设置 Email 字段
 	_, err = client.CreateUser(ctx, createUserRequest2)
 	if !strings.Contains(err.Error(), "invalid email format") {
 		log.Printf("[GetUser        ] Failed to validation request parameter")

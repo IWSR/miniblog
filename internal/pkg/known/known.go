@@ -27,7 +27,7 @@ const (
 
 // 定义其他常量.
 const (
-	// Admin 用户名.
+	// AdminUsername Admin 用户名.
 	AdminUsername = "root"
 
 	// MaxErrGroupConcurrency 定义了 errgroup 的最大并发任务数量.

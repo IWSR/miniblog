@@ -13,7 +13,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// 定义一个通用中间件：打印请求路径
+// LogMiddleware 定义一个通用中间件：打印请求路径
 func LogMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		log.Printf("Request path: %s\n", c.Request.URL.Path)

@@ -54,11 +54,11 @@ func BenchmarkResourceID_New(b *testing.B) {
 
 func FuzzResourceID_New(f *testing.F) {
 	// 添加预置测试数据
-	f.Add(uint64(1))      // 添加一个种子值counter为1
+	f.Add(uint64(1))      // 添加一个种子值 counter 为 1
 	f.Add(uint64(123456)) // 添加一个较大的种子值
 
 	f.Fuzz(func(t *testing.T, counter uint64) {
-		// 测试UserID的New方法
+		// 测试 UserID 的 New 方法
 		result := rid.UserID.New(counter)
 
 		// 断言结果不为空
@@ -67,11 +67,11 @@ func FuzzResourceID_New(f *testing.F) {
 		// 断言结果必须包含资源标识符前缀
 		assert.Contains(t, result, rid.UserID.String()+"-", "The generated unique identifier should contain the correct prefix")
 
-		// 断言前缀不会与uniqueStr部分重叠
+		// 断言前缀不会与 uniqueStr 部分重叠
 		splitParts := strings.SplitN(result, "-", 2)
 		assert.Equal(t, rid.UserID.String(), splitParts[0], "The prefix part of the result should correctly match the UserID")
 
-		// 断言生成的ID具有固定长度（基于NewCode的配置）
+		// 断言生成的 ID 具有固定长度（基于 NewCode 的配置）
 		if len(splitParts) == 2 {
 			assert.Equal(t, 6, len(splitParts[1]), "The unique identifier part should have a length of 6")
 		} else {
