@@ -1,0 +1,128 @@
+name: Pull Request Check
+
+# 专门用于PR检查的轻量级工作流
+# 包括代码质量检查、测试和提交规范检查
+
+on:
+  pull_request:
+    branches: [main, develop]
+
+jobs:
+  # 提交信息规范检查
+  commit-lint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "18"
+
+      - name: Install commitlint
+        run: npm install --save-dev @commitlint/cli @commitlint/config-conventional
+
+      - name: Validate PR commits
+        run: |
+          echo "🔍 验证PR中的提交信息..."
+          npx commitlint --from ${{ github.event.pull_request.base.sha }} --to ${{ github.event.pull_request.head.sha }} --verbose
+
+      - name: Check PR title format
+        uses: amannn/action-semantic-pull-request@v5
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          types: |
+            feat
+            fix
+            docs
+            style
+            refactor
+            test
+            chore
+            perf
+            ci
+            build
+            revert
+          requireScope: false
+
+  # 代码质量检查
+  code-quality:
+    runs-on: ubuntu-latest
+    needs: commit-lint
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: "1.23.4"
+
+      - name: Cache Go modules
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cache/go-build
+            ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
+
+      - name: Download dependencies
+        run: go mod download
+
+      - name: Check Go formatting
+        run: |
+          if [ "$(gofmt -s -l . | wc -l)" -gt 0 ]; then
+            echo "❌ Go代码格式不正确，请运行 gofmt -s -w ."
+            gofmt -s -l .
+            exit 1
+          fi
+          echo "✅ Go代码格式检查通过"
+
+      - name: Run go vet
+        run: |
+          go vet ./...
+          echo "✅ go vet检查通过"
+
+      - name: Run tests
+        run: |
+          go test -v -race -coverprofile=coverage.out ./...
+          echo "✅ 单元测试通过"
+
+      - name: Check test coverage
+        run: |
+          go tool cover -func=coverage.out
+          COVERAGE=$(go tool cover -func=coverage.out | grep total | awk '{print $3}' | sed 's/%//')
+          echo "📊 测试覆盖率: ${COVERAGE}%"
+
+          # 设置最低覆盖率要求（可调整）
+          MIN_COVERAGE=50
+          if (( $(echo "$COVERAGE < $MIN_COVERAGE" | bc -l) )); then
+            echo "❌ 测试覆盖率 ${COVERAGE}% 低于要求的 ${MIN_COVERAGE}%"
+            exit 1
+          fi
+          echo "✅ 测试覆盖率检查通过"
+
+      - name: Build check
+        run: |
+          make build BINS=mb-apiserver
+          echo "✅ 编译检查通过"
+          ls -la _output/platforms/linux/amd64/mb-apiserver
+
+      - name: PR Check Summary
+        run: |
+          echo "🎉 PR检查完成！"
+          echo "✅ 提交信息规范检查通过"
+          echo "✅ 代码格式正确"
+          echo "✅ 静态分析通过"
+          echo "✅ 单元测试通过"
+          echo "✅ 测试覆盖率达标"
+          echo "✅ 编译成功"
+          echo ""
+          echo "👍 此PR可以合并！"

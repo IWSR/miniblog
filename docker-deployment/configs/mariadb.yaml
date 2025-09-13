@@ -1,0 +1,40 @@
+# MiniBlog MariaDB数据库配置
+# 适用于生产环境
+
+server-mode: grpc-gateway
+jwt-key: Rtg8BPKNEf2mB4mgvKONGPZZQSaJWNLijxR42qRgq0iBb5
+expiration: 2h
+
+# 禁用内存数据库，使用MariaDB（关键配置）
+enable-memory-store: false
+
+# 禁用TLS简化部署（生产环境建议启用）
+tls:
+  use-tls: false
+
+# HTTP服务器配置
+http:
+  addr: :5555
+
+# gRPC服务器配置
+grpc:
+  addr: :6666
+
+# MariaDB数据库配置
+mysql:
+  addr: miniblog-mariadb:3306 # 使用容器名作为主机名
+  username: miniblog
+  password: miniblog1234
+  database: miniblog
+  max-idle-connections: 50
+  max-open-connections: 100
+  max-connection-life-time: 10s
+  log-level: 2 # 1:silent, 2:error, 3:warn, 4:info
+
+# 日志配置
+log:
+  disable-caller: false
+  disable-stacktrace: false
+  level: info
+  format: json
+  output-paths: [stdout]

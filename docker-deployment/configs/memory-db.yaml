@@ -1,0 +1,29 @@
+# MiniBlog 内存数据库配置
+# 适用于开发、测试环境
+
+server-mode: grpc-gateway
+jwt-key: Rtg8BPKNEf2mB4mgvKONGPZZQSaJWNLijxR42qRgq0iBb5
+expiration: 2h
+
+# 启用内存数据库（关键配置）
+enable-memory-store: true
+
+# 禁用TLS简化部署
+tls:
+  use-tls: false
+
+# HTTP服务器配置
+http:
+  addr: :5555
+
+# gRPC服务器配置
+grpc:
+  addr: :6666
+
+# 日志配置
+log:
+  disable-caller: false
+  disable-stacktrace: false
+  level: info
+  format: json
+  output-paths: [stdout]

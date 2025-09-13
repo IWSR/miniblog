@@ -1,0 +1,250 @@
+name: Build and Deploy MiniBlog
+
+on:
+  push:
+    branches: [main, develop]
+    tags: ["v*"]
+  pull_request:
+    branches: [main]
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  # 代码质量检查
+  lint-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: "1.23.4"
+
+      - name: Cache Go modules
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cache/go-build
+            ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
+
+      - name: Download dependencies
+        run: go mod download
+
+      - name: Run tests
+        run: make test
+
+      - name: Run linter
+        run: make lint
+
+  # 构建和推送Docker镜像
+  build-and-push:
+    needs: lint-and-test
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    outputs:
+      image-digest: ${{ steps.build.outputs.digest }}
+      image-tag: ${{ steps.meta.outputs.tags }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: "1.23.4"
+
+      - name: Cache Go modules
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cache/go-build
+            ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
+
+      - name: Build Go application
+        run: |
+          make build BINS=mb-apiserver
+          ls -la _output/platforms/linux/amd64/
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=semver,pattern={{major}}
+            type=sha,prefix={{branch}}-
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: Prepare Docker build context
+        run: |
+          mkdir -p docker-build-context
+          cp _output/platforms/linux/amd64/mb-apiserver docker-build-context/
+          cp build/docker/mb-apiserver/Dockerfile docker-build-context/
+
+      - name: Build and push Docker image
+        id: build
+        uses: docker/build-push-action@v5
+        with:
+          context: docker-build-context
+          file: docker-build-context/Dockerfile
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          platforms: linux/amd64,linux/arm64
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  # 安全扫描
+  security-scan:
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: read
+      security-events: write
+
+    steps:
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ${{ needs.build-and-push.outputs.image-tag }}
+          format: "sarif"
+          output: "trivy-results.sarif"
+
+      - name: Upload Trivy scan results to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@v2
+        if: always()
+        with:
+          sarif_file: "trivy-results.sarif"
+
+  # 部署到测试环境
+  deploy-staging:
+    needs: [build-and-push, security-scan]
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/develop'
+    environment: staging
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Deploy to staging server
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: ${{ secrets.STAGING_SERVER_HOST }}
+          username: ${{ secrets.STAGING_SERVER_USER }}
+          key: ${{ secrets.STAGING_SERVER_SSH_KEY }}
+          port: ${{ secrets.STAGING_SERVER_PORT }}
+          script: |
+            # 拉取最新镜像
+            docker pull ${{ needs.build-and-push.outputs.image-tag }}
+
+            # 停止旧容器
+            docker stop miniblog-staging || true
+            docker rm miniblog-staging || true
+
+            # 启动新容器
+            docker run -d \
+              --name miniblog-staging \
+              -p 5555:5555 \
+              -p 6666:6666 \
+              --restart unless-stopped \
+              ${{ needs.build-and-push.outputs.image-tag }}
+
+  # 部署到生产环境
+  deploy-production:
+    needs: [build-and-push, security-scan]
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/v')
+    environment: production
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Deploy to production server
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: ${{ secrets.PROD_SERVER_HOST }}
+          username: ${{ secrets.PROD_SERVER_USER }}
+          key: ${{ secrets.PROD_SERVER_SSH_KEY }}
+          port: ${{ secrets.PROD_SERVER_PORT }}
+          script: |
+            # 创建备份
+            docker tag miniblog-prod:latest miniblog-prod:backup-$(date +%Y%m%d-%H%M%S) || true
+
+            # 拉取最新镜像
+            docker pull ${{ needs.build-and-push.outputs.image-tag }}
+            docker tag ${{ needs.build-and-push.outputs.image-tag }} miniblog-prod:latest
+
+            # 滚动更新
+            docker-compose -f /opt/miniblog/docker-compose.yml up -d --no-deps app
+
+  # 创建GitHub Release
+  create-release:
+    needs: [build-and-push, deploy-production]
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/v')
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Create Release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref }}
+          release_name: Release ${{ github.ref }}
+          body: |
+            ## 🚀 MiniBlog ${{ github.ref }}
+
+            ### 📦 Docker镜像
+            ```bash
+            docker pull ${{ needs.build-and-push.outputs.image-tag }}
+            ```
+
+            ### 🔄 部署命令
+            ```bash
+            # 更新到最新版本
+            docker pull ${{ needs.build-and-push.outputs.image-tag }}
+            docker stop miniblog-app
+            docker rm miniblog-app
+            docker run -d --name miniblog-app -p 5555:5555 ${{ needs.build-and-push.outputs.image-tag }}
+            ```
+
+            ### 📋 更新内容
+            - 自动生成的发布版本
+            - 包含最新的功能和修复
+
+          draft: false
+          prerelease: false
