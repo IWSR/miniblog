@@ -6,6 +6,8 @@
 go.work
 go.work.sum
 
+node_modules/
+
 # 日志文件
 *.log
 
