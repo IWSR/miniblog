@@ -1,19 +1,11 @@
-# [1.0.0](https://github.com/onexstack/miniblog/compare/v1.0.1...v1.0.0) (2025-09-14)
-
-
-### Features
-
-* 优化部署流程，增加实时进度显示和超时时间 ([eb06c26](https://github.com/onexstack/miniblog/commit/eb06c26bbc78418fa5f4bb62ac4e72e088b543e7))
-
-
-
-## [1.0.1](https://github.com/onexstack/miniblog/compare/f52c7bdaf1cdc6bcab31ea038f0fea468967c559...v1.0.1) (2025-09-14)
+# 1.0.0 (2025-09-14)
 
 
 ### Bug Fixes
 
 * **ci:** resolve GitHub Actions Docker tag and lint issues ([e914e18](https://github.com/onexstack/miniblog/commit/e914e18f613e74fb0ab04a6336728f87e26dc222))
 * improve production deployment script with better error handling ([c62eddd](https://github.com/onexstack/miniblog/commit/c62edddb26b4cf3a2bf73ca4c275c25345f46812))
+* 移除不兼容的docker pull --progress参数 ([fe8eda9](https://github.com/onexstack/miniblog/commit/fe8eda9a599c501c0d5653f1bef9c5af30e60609))
 * 简化安全扫描 ([dfaf20b](https://github.com/onexstack/miniblog/commit/dfaf20b80f41145c425dd3e2f71439040cda7379))
 * 触发分支修改回master ([83d8163](https://github.com/onexstack/miniblog/commit/83d8163032c0c9c11afdc6a2ca86f4bca6e634f0))
 
@@ -29,6 +21,7 @@
 * update ([a19fa68](https://github.com/onexstack/miniblog/commit/a19fa6894605cfe96278919e3c949565883af2f0))
 * update README.md ([348d333](https://github.com/onexstack/miniblog/commit/348d333827cbf9d2dea7b2715c682f11864517b2))
 * Wire依赖注入实现 ([2c8cfe4](https://github.com/onexstack/miniblog/commit/2c8cfe42ad90208855622d9c108286ecb27d4096))
+* 优化部署流程，增加实时进度显示和超时时间 ([eb06c26](https://github.com/onexstack/miniblog/commit/eb06c26bbc78418fa5f4bb62ac4e72e088b543e7))
 * 创建Cobra应用程序 ([895c4d9](https://github.com/onexstack/miniblog/commit/895c4d9ab4146f9d387058723468336177a901fb))
 * 初始化Go项目 ([52161bb](https://github.com/onexstack/miniblog/commit/52161bb188415dfe65c9b7242794ec2b6c4ac58d))
 * 基于Gin实现HTTP服务器 ([bedbb9a](https://github.com/onexstack/miniblog/commit/bedbb9afc0f76a7c1ae28013b11ce3fa213493a8))
@@ -53,6 +46,7 @@
 * 添加Bypass认证中间件（放通所有认证） ([75eeb90](https://github.com/onexstack/miniblog/commit/75eeb903297b273cfbf6beb304868f104716a15b))
 * 添加gRPC拦截器 ([87bd2fb](https://github.com/onexstack/miniblog/commit/87bd2fb80119633611b9384b0bd27def392b26c8))
 * 添加日志包log ([f05e989](https://github.com/onexstack/miniblog/commit/f05e98994ada4a42767b1c1b1ae6ac630bac9c7c))
+* 添加生产环境部署脚本 ([9cb873c](https://github.com/onexstack/miniblog/commit/9cb873c284d6252e12a4c433ecd7a053ce4309db))
 * 第一次提交 ([f52c7bd](https://github.com/onexstack/miniblog/commit/f52c7bdaf1cdc6bcab31ea038f0fea468967c559))
 * 软件架构升级 ([22a020c](https://github.com/onexstack/miniblog/commit/22a020c9bd76e5aea2303e2f867256893916a162))
 
