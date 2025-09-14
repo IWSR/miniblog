@@ -48,6 +48,9 @@ jobs:
             build
             revert
           requireScope: false
+          subjectPattern: ^.+$
+          subjectPatternError: |
+            The subject must not be empty.
 
   # 代码质量检查
   code-quality:

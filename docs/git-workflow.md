@@ -9,7 +9,7 @@ MiniBlog项目采用规范化的Git工作流程，包括分支管理、提交信
 ### 主要分支
 
 ```
-main (生产分支)
+master (生产分支)
 ├── develop (开发分支)
 ├── feature/* (功能分支)
 ├── fix/* (修复分支)
@@ -21,7 +21,7 @@ main (生产分支)
 
 | 分支类型 | 命名规范 | 用途 | 示例 |
 |----------|----------|------|------|
-| `main` | 固定名称 | 生产环境代码 | `main` |
+| `master` | 固定名称 | 生产环境代码 | `master` |
 | `develop` | 固定名称 | 开发环境代码 | `develop` |
 | `feature` | `feature/功能名` | 新功能开发 | `feature/user-auth` |
 | `fix` | `fix/问题描述` | Bug修复 | `fix/login-timeout` |
@@ -100,7 +100,7 @@ git branch -d feature/user-profile
 
 ```bash
 # 1. 从相应分支创建修复分支
-git checkout develop  # 或 main（如果是hotfix）
+git checkout develop  # 或 master（如果是hotfix）
 git pull origin develop
 git checkout -b fix/login-validation
 
@@ -123,11 +123,11 @@ git checkout -b release/v1.2.0
 # 2. 准备发布（更新版本号、文档等）
 git commit -m "chore(release): prepare v1.2.0"
 
-# 3. 合并到main并打标签
-git checkout main
+# 3. 合并到master并打标签
+git checkout master
 git merge release/v1.2.0
 git tag -a v1.2.0 -m "Release version 1.2.0"
-git push origin main --tags
+git push origin master --tags
 
 # 4. 合并回develop
 git checkout develop

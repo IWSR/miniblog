@@ -57,8 +57,8 @@ module.exports = {
     // 主题不能以句号结尾
     'subject-full-stop': [2, 'never', '.'],
 
-    // 主题格式：小写开头
-    'subject-case': [2, 'always', 'lower-case'],
+    // 主题格式：允许任意大小写
+    'subject-case': [0],
 
     // 主题最大长度
     'subject-max-length': [2, 'always', 50],
