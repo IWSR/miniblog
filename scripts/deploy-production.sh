@@ -26,7 +26,7 @@ fi
 
 # 拉取最新镜像
 echo "📥 拉取最新镜像..."
-if docker pull --progress=plain "$IMAGE_TAG"; then
+if docker pull "$IMAGE_TAG"; then
     echo "✅ 镜像拉取成功"
 else
     echo "❌ 镜像拉取失败"
