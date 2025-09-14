@@ -102,6 +102,9 @@ jobs:
     runs-on: ubuntu-latest
     if: github.event_name == 'push' && github.ref == 'refs/heads/master'
     needs: commitlint
+    permissions:
+      contents: write # 需要写权限来推送更改
+      pull-requests: write # 如果需要创建PR
 
     steps:
       - name: Checkout code
@@ -109,6 +112,7 @@ jobs:
         with:
           fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
+          persist-credentials: true
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -123,15 +127,17 @@ jobs:
         run: |
           conventional-changelog -p angular -i CHANGELOG.md -s -r 0
 
-      - name: Commit changelog
+      - name: Commit and push changelog
         run: |
-          git config --local user.email "action@github.com"
-          git config --local user.name "GitHub Action"
+          git config --local user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
 
           if [[ -n $(git status --porcelain) ]]; then
             git add CHANGELOG.md
             git commit -m "docs(changelog): update changelog [skip ci]"
-            git push
+            git push origin HEAD:master
           else
             echo "No changes to commit"
           fi
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
