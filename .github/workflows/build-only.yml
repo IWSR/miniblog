@@ -5,10 +5,10 @@ name: Build MiniBlog (Simple)
 
 on:
   push:
-    branches: [master, develop]
+    branches: [main, develop]
     tags: ["v*"]
   pull_request:
-    branches: [master]
+    branches: [main, develop]
 
 env:
   REGISTRY: ghcr.io
@@ -72,8 +72,10 @@ jobs:
             type=ref,event=branch
             type=ref,event=pr
             type=semver,pattern={{version}}
-            type=sha,prefix={{branch}}-
+            type=sha,prefix=sha-,format=short
             type=raw,value=latest,enable={{is_default_branch}}
+          flavor: |
+            latest=auto
 
       - name: Prepare Docker build context
         run: |
