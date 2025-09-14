@@ -205,16 +205,89 @@ jobs:
           username: ${{ secrets.PROD_SERVER_USER }}
           key: ${{ secrets.PROD_SERVER_SSH_KEY }}
           port: ${{ secrets.PROD_SERVER_PORT }}
+          timeout: 300s
+          command_timeout: 300s
           script: |
-            # 创建备份
-            docker tag miniblog-prod:latest miniblog-prod:backup-$(date +%Y%m%d-%H%M%S) || true
+            set -e
+            
+            echo "🚀 开始生产环境部署..."
+            echo "镜像: ${{ needs.build-and-push.outputs.image-tag }}"
+            
+            # 创建备份（仅当镜像存在时）
+            if docker image inspect miniblog-prod:latest >/dev/null 2>&1; then
+              echo "📦 创建当前镜像备份..."
+              docker tag miniblog-prod:latest miniblog-prod:backup-$(date +%Y%m%d-%H%M%S)
+              echo "✅ 备份完成"
+            else
+              echo "ℹ️  当前没有生产镜像，跳过备份"
+            fi
 
             # 拉取最新镜像
+            echo "📥 拉取最新镜像..."
             docker pull ${{ needs.build-and-push.outputs.image-tag }}
             docker tag ${{ needs.build-and-push.outputs.image-tag }} miniblog-prod:latest
+            echo "✅ 镜像拉取完成"
 
-            # 滚动更新
-            docker-compose -f /opt/miniblog/docker-compose.yml up -d --no-deps app
+            # 停止旧容器
+            echo "🛑 停止旧容器..."
+            docker stop miniblog-app 2>/dev/null || echo "容器不存在或已停止"
+            docker rm miniblog-app 2>/dev/null || echo "容器不存在"
+
+            # 创建部署目录
+            mkdir -p /opt/miniblog/configs
+            mkdir -p /opt/miniblog/logs
+
+            # 创建配置文件
+            echo "⚙️  创建配置文件..."
+            cat > /opt/miniblog/configs/mb-apiserver.yaml << 'EOF'
+            server-mode: grpc-gateway
+            jwt-key: Rtg8BPKNEf2mB4mgvKONGPZZQSaJWNLijxR42qRgq0iBb5
+            expiration: 2h
+            enable-memory-store: true
+            tls:
+              use-tls: false
+            http:
+              addr: :5555
+            grpc:
+              addr: :6666
+            log:
+              disable-caller: false
+              disable-stacktrace: false
+              level: info
+              format: json
+              output-paths: [stdout, /opt/miniblog/logs/app.log]
+            EOF
+
+            # 启动新容器
+            echo "🚀 启动新容器..."
+            docker run -d \
+              --name miniblog-app \
+              -p 5555:5555 \
+              -p 6666:6666 \
+              -v /opt/miniblog/configs/mb-apiserver.yaml:/opt/miniblog/configs/mb-apiserver.yaml \
+              -v /opt/miniblog/logs:/opt/miniblog/logs \
+              --restart unless-stopped \
+              miniblog-prod:latest \
+              --config=/opt/miniblog/configs/mb-apiserver.yaml
+
+            # 等待服务启动
+            echo "⏳ 等待服务启动..."
+            for i in {1..30}; do
+              if curl -f http://localhost:5555/healthz >/dev/null 2>&1; then
+                echo "✅ 服务启动成功！"
+                break
+              fi
+              if [ $i -eq 30 ]; then
+                echo "❌ 服务启动超时"
+                docker logs miniblog-app
+                exit 1
+              fi
+              sleep 2
+            done
+
+            echo "🎉 部署完成！"
+            echo "📊 容器状态:"
+            docker ps | grep miniblog-app
 
   # 创建GitHub Release
   create-release:
