@@ -1,9 +1,19 @@
-# 1.0.0 (2025-09-14)
+# [1.0.0](https://github.com/onexstack/miniblog/compare/v1.0.1...v1.0.0) (2025-09-14)
+
+
+### Features
+
+* 优化部署流程，增加实时进度显示和超时时间 ([eb06c26](https://github.com/onexstack/miniblog/commit/eb06c26bbc78418fa5f4bb62ac4e72e088b543e7))
+
+
+
+## [1.0.1](https://github.com/onexstack/miniblog/compare/f52c7bdaf1cdc6bcab31ea038f0fea468967c559...v1.0.1) (2025-09-14)
 
 
 ### Bug Fixes
 
 * **ci:** resolve GitHub Actions Docker tag and lint issues ([e914e18](https://github.com/onexstack/miniblog/commit/e914e18f613e74fb0ab04a6336728f87e26dc222))
+* improve production deployment script with better error handling ([c62eddd](https://github.com/onexstack/miniblog/commit/c62edddb26b4cf3a2bf73ca4c275c25345f46812))
 * 简化安全扫描 ([dfaf20b](https://github.com/onexstack/miniblog/commit/dfaf20b80f41145c425dd3e2f71439040cda7379))
 * 触发分支修改回master ([83d8163](https://github.com/onexstack/miniblog/commit/83d8163032c0c9c11afdc6a2ca86f4bca6e634f0))
 
