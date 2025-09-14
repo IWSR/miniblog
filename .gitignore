@@ -6,10 +6,93 @@
 go.work
 go.work.sum
 
+# Go 编译输出
+/_output/
+/bin/
+/pkg/
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Go 测试文件
+*.test
+*.out
+coverage.out
+coverage.html
+
+# Node.js 依赖
 node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+package-lock.json
+yarn.lock
 
 # 日志文件
 *.log
+logs/
 
-# 自定义文件
-/_output
+# 环境变量文件
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# IDE 和编辑器文件
+.vscode/settings.json
+.codebuddy
+.idea/
+*.swp
+*.swo
+*~
+
+# 操作系统文件
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# 临时文件
+*.tmp
+*.temp
+*.cache
+
+# Docker 相关
+.dockerignore
+
+# 构建和部署文件
+dist/
+build/
+target/
+
+# 数据库文件
+*.db
+*.sqlite
+*.sqlite3
+
+# 证书和密钥文件
+*.pem
+*.key
+*.crt
+*.p12
+*.pfx
+
+# 压缩文件（大文件）
+*.zip
+*.tar.gz
+*.rar
+*.7z
+
+# 备份和快照
+*.backup
+*.snapshot
+
+# Auto-added by fix-git-push.sh
+_output/
+coverage/
