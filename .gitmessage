@@ -1,0 +1,34 @@
+# <type>[optional scope]: <description>
+# 
+# [optional body]
+# 
+# [optional footer(s)]
+# 
+# 类型 (Types):
+#   feat:     新功能
+#   fix:      修复bug
+#   docs:     文档更新
+#   style:    代码格式化
+#   refactor: 代码重构
+#   test:     测试相关
+#   chore:    构建/工具相关
+#   perf:     性能优化
+#   ci:       CI/CD相关
+#   build:    构建系统
+#   revert:   回滚提交
+# 
+# 作用域 (Scopes):
+#   api, auth, db, docker, config, middleware, model, service, 
+#   handler, test, ci, docs, user, post, server, client, utils, deps
+# 
+# 示例:
+#   feat(auth): add JWT token validation
+#   fix(db): resolve connection timeout issue
+#   docs(readme): update installation guide
+#   refactor(api): simplify error handling logic
+# 
+# 规则:
+#   - 使用现在时态: "add" 不是 "added"
+#   - 首字母小写
+#   - 描述不超过50个字符
+#   - 正文每行不超过72个字符

@@ -1,0 +1,134 @@
+name: Build MiniBlog (Simple)
+
+# 这是一个简化版的工作流，只负责构建和推送Docker镜像
+# 适合只需要CI功能，不需要自动部署的场景
+
+on:
+  push:
+    branches: [master, develop]
+    tags: ["v*"]
+  pull_request:
+    branches: [master, develop]
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: "1.23.4"
+
+      - name: Cache Go modules
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cache/go-build
+            ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
+
+      - name: Download dependencies
+        run: go mod download
+
+      - name: Run tests
+        run: |
+          go test -v ./...
+
+      - name: Build Go application
+        run: |
+          make build BINS=mb-apiserver
+          echo "✅ Go应用编译完成"
+          ls -la _output/platforms/linux/amd64/mb-apiserver
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=semver,pattern={{version}}
+            type=sha,prefix=sha-,format=short
+            type=raw,value=latest,enable={{is_default_branch}}
+          flavor: |
+            latest=auto
+
+      - name: Prepare Docker build context
+        run: |
+          mkdir -p docker-build-context
+          cp _output/platforms/linux/amd64/mb-apiserver docker-build-context/
+
+          # 创建优化的Dockerfile
+          cat > docker-build-context/Dockerfile << 'EOF'
+          FROM alpine:3.18
+
+          RUN apk add --no-cache tzdata ca-certificates && \
+              ln -sf /usr/share/zoneinfo/Asia/Shanghai /etc/localtime && \
+              echo "Asia/Shanghai" > /etc/timezone
+
+          RUN addgroup -g 1000 miniblog && \
+              adduser -D -s /bin/sh -u 1000 -G miniblog miniblog
+
+          RUN mkdir -p /opt/miniblog/bin /opt/miniblog/configs /opt/miniblog/log && \
+              chown -R miniblog:miniblog /opt/miniblog
+
+          COPY mb-apiserver /opt/miniblog/bin/mb-apiserver
+
+          RUN chmod +x /opt/miniblog/bin/mb-apiserver && \
+              chown miniblog:miniblog /opt/miniblog/bin/mb-apiserver
+
+          USER miniblog
+          WORKDIR /opt/miniblog
+
+          EXPOSE 5555 6666
+
+          HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+              CMD wget --no-verbose --tries=1 --spider http://localhost:5555/healthz || exit 1
+
+          ENTRYPOINT ["/opt/miniblog/bin/mb-apiserver"]
+          EOF
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: docker-build-context
+          file: docker-build-context/Dockerfile
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          platforms: linux/amd64
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Output image info
+        run: |
+          echo "🎉 Docker镜像构建完成！"
+          echo "📦 镜像标签: ${{ steps.meta.outputs.tags }}"
+          echo ""
+          echo "🚀 使用方法："
+          echo "docker pull ${{ steps.meta.outputs.tags }}"
+          echo "docker run -d -p 5555:5555 -p 6666:6666 ${{ steps.meta.outputs.tags }}"

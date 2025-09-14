@@ -1,0 +1,42 @@
+{
+  "name": "miniblog",
+  "version": "1.0.0",
+  "description": "MiniBlog - A simple blog system built with Go",
+  "main": "index.js",
+  "scripts": {
+    "prepare": "husky install",
+    "commit": "git-cz",
+    "lint:commit": "commitlint --edit",
+    "lint:commit-ci": "commitlint --from=HEAD~1 --to=HEAD --verbose"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/onexstack/miniblog.git"
+  },
+  "keywords": [
+    "go",
+    "blog",
+    "api",
+    "docker",
+    "microservice"
+  ],
+  "author": "MiniBlog Team",
+  "license": "MIT",
+  "devDependencies": {
+    "@commitlint/cli": "^18.6.1",
+    "@commitlint/config-conventional": "^18.6.3",
+    "commitizen": "^4.3.1",
+    "cz-conventional-changelog": "^3.3.0",
+    "husky": "^8.0.3"
+  },
+  "config": {
+    "commitizen": {
+      "path": "./node_modules/cz-conventional-changelog"
+    }
+  },
+  "husky": {
+    "hooks": {
+      "commit-msg": "commitlint -E HUSKY_GIT_PARAMS"
+    }
+  }
+}

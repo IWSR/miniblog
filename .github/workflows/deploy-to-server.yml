@@ -1,0 +1,312 @@
+name: Deploy to Server
+
+# 专门用于服务器部署的工作流
+# 可以手动触发或在镜像构建完成后自动触发
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "部署环境"
+        required: true
+        default: "staging"
+        type: choice
+        options:
+          - staging
+          - production
+      image_tag:
+        description: "镜像标签"
+        required: false
+        default: "latest"
+      deploy_mode:
+        description: "部署模式"
+        required: true
+        default: "mariadb"
+        type: choice
+        options:
+          - memory
+          - mariadb
+  workflow_call:
+    inputs:
+      environment:
+        required: true
+        type: string
+      image_tag:
+        required: true
+        type: string
+      deploy_mode:
+        required: false
+        type: string
+        default: "mariadb"
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set deployment variables
+        id: vars
+        run: |
+          # 根据环境设置服务器信息
+          if [ "${{ inputs.environment }}" = "production" ]; then
+            echo "server_host=${{ secrets.PROD_SERVER_HOST }}" >> $GITHUB_OUTPUT
+            echo "server_user=${{ secrets.PROD_SERVER_USER }}" >> $GITHUB_OUTPUT
+            echo "server_key=${{ secrets.PROD_SERVER_SSH_KEY }}" >> $GITHUB_OUTPUT
+            echo "server_port=${{ secrets.PROD_SERVER_PORT || '22' }}" >> $GITHUB_OUTPUT
+            echo "container_name=miniblog-prod" >> $GITHUB_OUTPUT
+            echo "deploy_path=/opt/miniblog-prod" >> $GITHUB_OUTPUT
+          else
+            echo "server_host=${{ secrets.STAGING_SERVER_HOST }}" >> $GITHUB_OUTPUT
+            echo "server_user=${{ secrets.STAGING_SERVER_USER }}" >> $GITHUB_OUTPUT
+            echo "server_key=${{ secrets.STAGING_SERVER_SSH_KEY }}" >> $GITHUB_OUTPUT
+            echo "server_port=${{ secrets.STAGING_SERVER_PORT || '22' }}" >> $GITHUB_OUTPUT
+            echo "container_name=miniblog-staging" >> $GITHUB_OUTPUT
+            echo "deploy_path=/opt/miniblog-staging" >> $GITHUB_OUTPUT
+          fi
+
+          # 设置镜像标签
+          IMAGE_TAG="${{ inputs.image_tag }}"
+          if [ -z "$IMAGE_TAG" ] || [ "$IMAGE_TAG" = "latest" ]; then
+            IMAGE_TAG="latest"
+          fi
+          echo "image_tag=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:$IMAGE_TAG" >> $GITHUB_OUTPUT
+
+          # 设置部署模式
+          DEPLOY_MODE="${{ inputs.deploy_mode }}"
+          if [ -z "$DEPLOY_MODE" ]; then
+            DEPLOY_MODE="mariadb"
+          fi
+          echo "deploy_mode=$DEPLOY_MODE" >> $GITHUB_OUTPUT
+
+      - name: Deploy to server
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: ${{ steps.vars.outputs.server_host }}
+          username: ${{ steps.vars.outputs.server_user }}
+          key: ${{ steps.vars.outputs.server_key }}
+          port: ${{ steps.vars.outputs.server_port }}
+          script: |
+            set -e
+
+            echo "=========================================="
+            echo "🚀 MiniBlog 自动部署开始"
+            echo "=========================================="
+            echo "环境: ${{ inputs.environment }}"
+            echo "模式: ${{ steps.vars.outputs.deploy_mode }}"
+            echo "镜像: ${{ steps.vars.outputs.image_tag }}"
+            echo "容器: ${{ steps.vars.outputs.container_name }}"
+            echo "路径: ${{ steps.vars.outputs.deploy_path }}"
+            echo ""
+
+            # 创建部署目录
+            echo "📁 创建部署目录..."
+            mkdir -p ${{ steps.vars.outputs.deploy_path }}
+            cd ${{ steps.vars.outputs.deploy_path }}
+
+            # 登录到GitHub Container Registry
+            echo "🔐 登录容器注册表..."
+            echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+
+            # 拉取最新镜像
+            echo "📦 拉取Docker镜像..."
+            docker pull ${{ steps.vars.outputs.image_tag }}
+
+            # 根据部署模式执行不同的部署策略
+            if [ "${{ steps.vars.outputs.deploy_mode }}" = "mariadb" ]; then
+              echo "🗄️  执行MariaDB模式部署..."
+              
+              # 创建网络
+              docker network create miniblog-network-${{ inputs.environment }} 2>/dev/null || true
+              
+              # 启动MariaDB（如果不存在）
+              DB_CONTAINER="miniblog-mariadb-${{ inputs.environment }}"
+              if ! docker ps | grep -q $DB_CONTAINER; then
+                echo "🗄️  启动MariaDB容器..."
+                docker run -d \
+                  --name $DB_CONTAINER \
+                  --network miniblog-network-${{ inputs.environment }} \
+                  -e MYSQL_ROOT_PASSWORD=root123456 \
+                  -e MYSQL_DATABASE=miniblog \
+                  -e MYSQL_USER=miniblog \
+                  -e MYSQL_PASSWORD=miniblog1234 \
+                  -p ${{ inputs.environment == 'production' && '3306' || '3307' }}:3306 \
+                  -v miniblog-db-data-${{ inputs.environment }}:/var/lib/mysql \
+                  --restart unless-stopped \
+                  mariadb:10.11
+                
+                echo "⏳ 等待数据库启动..."
+                sleep 30
+                
+                # 等待数据库就绪
+                for i in {1..60}; do
+                  if docker exec $DB_CONTAINER mysqladmin ping -h localhost -u root -proot123456 --silent; then
+                    echo "✅ 数据库已就绪"
+                    break
+                  fi
+                  if [ $i -eq 60 ]; then
+                    echo "❌ 数据库启动超时"
+                    exit 1
+                  fi
+                  sleep 1
+                done
+              else
+                echo "✅ MariaDB容器已存在"
+              fi
+              
+              # 停止旧的应用容器
+              echo "🛑 停止旧的应用容器..."
+              docker stop ${{ steps.vars.outputs.container_name }} 2>/dev/null || true
+              docker rm ${{ steps.vars.outputs.container_name }} 2>/dev/null || true
+              
+              # 创建MariaDB模式配置文件
+              echo "📝 创建MariaDB配置文件..."
+              cat > mb-apiserver.yaml << 'EOF'
+            server-mode: grpc-gateway
+            jwt-key: Rtg8BPKNEf2mB4mgvKONGPZZQSaJWNLijxR42qRgq0iBb5
+            expiration: 2h
+            enable-memory-store: false
+            tls:
+              use-tls: false
+            http:
+              addr: :5555
+            grpc:
+              addr: :6666
+            mysql:
+              addr: miniblog-mariadb-${{ inputs.environment }}:3306
+              username: miniblog
+              password: miniblog1234
+              database: miniblog
+              max-idle-connections: 50
+              max-open-connections: 100
+              max-connection-life-time: 10s
+              log-level: 2
+            log:
+              disable-caller: false
+              disable-stacktrace: false
+              level: ${{ inputs.environment == 'production' && 'info' || 'debug' }}
+              format: json
+              output-paths: [stdout]
+            EOF
+              
+              # 启动应用容器
+              echo "🚀 启动应用容器..."
+              docker run -d \
+                --name ${{ steps.vars.outputs.container_name }} \
+                --network miniblog-network-${{ inputs.environment }} \
+                -p ${{ inputs.environment == 'production' && '5555' || '5556' }}:5555 \
+                -p ${{ inputs.environment == 'production' && '6666' || '6667' }}:6666 \
+                -v $(pwd)/mb-apiserver.yaml:/opt/miniblog/configs/mb-apiserver.yaml \
+                --restart unless-stopped \
+                ${{ steps.vars.outputs.image_tag }} \
+                --config=/opt/miniblog/configs/mb-apiserver.yaml
+                
+            else
+              echo "💾 执行内存数据库模式部署..."
+              
+              # 停止旧容器
+              echo "🛑 停止旧容器..."
+              docker stop ${{ steps.vars.outputs.container_name }} 2>/dev/null || true
+              docker rm ${{ steps.vars.outputs.container_name }} 2>/dev/null || true
+              
+              # 创建内存数据库模式配置文件
+              echo "📝 创建内存数据库配置文件..."
+              cat > mb-apiserver.yaml << 'EOF'
+            server-mode: grpc-gateway
+            jwt-key: Rtg8BPKNEf2mB4mgvKONGPZZQSaJWNLijxR42qRgq0iBb5
+            expiration: 2h
+            enable-memory-store: true
+            tls:
+              use-tls: false
+            http:
+              addr: :5555
+            grpc:
+              addr: :6666
+            log:
+              disable-caller: false
+              disable-stacktrace: false
+              level: ${{ inputs.environment == 'production' && 'info' || 'debug' }}
+              format: json
+              output-paths: [stdout]
+            EOF
+              
+              # 启动容器
+              echo "🚀 启动应用容器..."
+              docker run -d \
+                --name ${{ steps.vars.outputs.container_name }} \
+                -p ${{ inputs.environment == 'production' && '5555' || '5556' }}:5555 \
+                -p ${{ inputs.environment == 'production' && '6666' || '6667' }}:6666 \
+                -v $(pwd)/mb-apiserver.yaml:/opt/miniblog/configs/mb-apiserver.yaml \
+                --restart unless-stopped \
+                ${{ steps.vars.outputs.image_tag }} \
+                --config=/opt/miniblog/configs/mb-apiserver.yaml
+            fi
+
+            # 等待服务启动
+            echo "⏳ 等待服务启动..."
+            sleep 15
+
+            # 健康检查
+            echo "🔍 执行健康检查..."
+            HEALTH_PORT=${{ inputs.environment == 'production' && '5555' || '5556' }}
+
+            for i in {1..30}; do
+              if curl -f http://localhost:$HEALTH_PORT/healthz; then
+                echo ""
+                echo "✅ 服务启动成功！"
+                echo "🌐 访问地址: http://$(curl -s ifconfig.me 2>/dev/null || echo 'YOUR_SERVER_IP'):$HEALTH_PORT"
+                break
+              fi
+              if [ $i -eq 30 ]; then
+                echo ""
+                echo "❌ 健康检查失败，查看容器日志："
+                docker logs --tail 20 ${{ steps.vars.outputs.container_name }}
+                exit 1
+              fi
+              echo -n "."
+              sleep 2
+            done
+
+            echo ""
+            echo "=========================================="
+            echo "🎉 部署完成！"
+            echo "=========================================="
+            echo "容器状态:"
+            docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}" | grep miniblog
+
+            echo ""
+            echo "📊 资源使用:"
+            docker stats --no-stream --format "table {{.Container}}\t{{.CPUPerc}}\t{{.MemUsage}}" | grep miniblog
+
+      - name: Deployment notification
+        if: always()
+        run: |
+          if [ "${{ job.status }}" = "success" ]; then
+            echo "## ✅ 部署成功" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "- **环境**: ${{ inputs.environment }}" >> $GITHUB_STEP_SUMMARY
+            echo "- **模式**: ${{ steps.vars.outputs.deploy_mode }}" >> $GITHUB_STEP_SUMMARY
+            echo "- **镜像**: ${{ steps.vars.outputs.image_tag }}" >> $GITHUB_STEP_SUMMARY
+            echo "- **容器**: ${{ steps.vars.outputs.container_name }}" >> $GITHUB_STEP_SUMMARY
+            echo "- **时间**: $(date)" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "### 🔗 访问地址" >> $GITHUB_STEP_SUMMARY
+            if [ "${{ inputs.environment }}" = "production" ]; then
+              echo "- HTTP API: http://your-server:5555" >> $GITHUB_STEP_SUMMARY
+              echo "- gRPC API: your-server:6666" >> $GITHUB_STEP_SUMMARY
+            else
+              echo "- HTTP API: http://your-server:5556" >> $GITHUB_STEP_SUMMARY
+              echo "- gRPC API: your-server:6667" >> $GITHUB_STEP_SUMMARY
+            fi
+          else
+            echo "## ❌ 部署失败" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "请检查部署日志和服务器配置。" >> $GITHUB_STEP_SUMMARY
+          fi

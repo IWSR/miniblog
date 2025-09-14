@@ -1,0 +1,137 @@
+name: Commit Lint
+
+# 验证提交信息是否符合规范
+
+on:
+  push:
+    branches: [master, develop]
+  pull_request:
+    branches: [master, develop]
+
+jobs:
+  commitlint:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # 获取完整的提交历史
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "18"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: |
+          npm install --save-dev @commitlint/cli @commitlint/config-conventional
+
+      - name: Validate current commit (push)
+        if: github.event_name == 'push'
+        run: |
+          echo "验证最新提交信息..."
+          npx commitlint --from HEAD~1 --to HEAD --verbose
+
+      - name: Validate PR commits
+        if: github.event_name == 'pull_request'
+        run: |
+          echo "验证PR中的所有提交信息..."
+          npx commitlint --from ${{ github.event.pull_request.base.sha }} --to ${{ github.event.pull_request.head.sha }} --verbose
+
+      - name: Validate PR title
+        if: github.event_name == 'pull_request'
+        run: |
+          echo "验证PR标题格式..."
+          echo "${{ github.event.pull_request.title }}" | npx commitlint
+
+  commit-message-check:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+
+    steps:
+      - name: Check PR title format
+        uses: amannn/action-semantic-pull-request@v5
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          types: |
+            feat
+            fix
+            docs
+            style
+            refactor
+            test
+            chore
+            perf
+            ci
+            build
+            revert
+          scopes: |
+            api
+            auth
+            db
+            docker
+            config
+            middleware
+            model
+            service
+            handler
+            test
+            ci
+            docs
+            user
+            post
+            server
+            client
+            utils
+            deps
+          requireScope: false
+          disallowScopes: |
+            release
+          subjectPattern: ^.+$
+          subjectPatternError: |
+            The subject "{subject}" found in the pull request title "{title}"
+            didn't match the configured pattern. Please ensure that the subject
+            is not empty.
+          wip: true
+          validateSingleCommit: false
+
+  generate-changelog:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+    needs: commitlint
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "18"
+
+      - name: Install conventional-changelog
+        run: |
+          npm install -g conventional-changelog-cli
+
+      - name: Generate changelog
+        run: |
+          conventional-changelog -p angular -i CHANGELOG.md -s -r 0
+
+      - name: Commit changelog
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+
+          if [[ -n $(git status --porcelain) ]]; then
+            git add CHANGELOG.md
+            git commit -m "docs(changelog): update changelog [skip ci]"
+            git push
+          else
+            echo "No changes to commit"
+          fi
