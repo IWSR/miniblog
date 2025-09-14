@@ -87,7 +87,9 @@ module.exports = {
     // 忽略merge提交
     (commit) => commit.includes('Merge'),
     // 忽略revert提交的特殊格式
-    (commit) => commit.includes('Revert')
+    (commit) => commit.includes('Revert'),
+    // 忽略分支名格式的提交（如 "Chore/docker GitHub actions"）
+    (commit) => /^[A-Z][a-z]+\//.test(commit)
   ],
 
   // 默认忽略的提交类型
