@@ -26,10 +26,44 @@ fi
 
 # 拉取最新镜像
 echo "📥 拉取最新镜像..."
-if docker pull "$IMAGE_TAG"; then
+echo "🔍 调试信息:"
+echo "  - 镜像标签: $IMAGE_TAG"
+echo "  - Docker版本: $(docker --version)"
+echo "  - 测试网络连接到 ghcr.io..."
+
+# 测试网络连接
+if curl -s --connect-timeout 10 https://ghcr.io >/dev/null; then
+    echo "  ✅ 网络连接正常"
+else
+    echo "  ❌ 网络连接失败"
+fi
+
+# 检查是否为公开镜像，如果是私有镜像可能需要认证
+echo "📥 开始拉取镜像: $IMAGE_TAG"
+docker pull "$IMAGE_TAG" 2>&1 | tee /tmp/docker_pull.log
+
+if [ ${PIPESTATUS[0]} -eq 0 ]; then
     echo "✅ 镜像拉取成功"
+    echo "📋 拉取后的镜像信息:"
+    docker images | grep miniblog
 else
     echo "❌ 镜像拉取失败"
+    echo "🔍 详细错误信息:"
+    cat /tmp/docker_pull.log
+    
+    echo "🔍 可能的原因:"
+    echo "  1. 镜像不存在或标签错误"
+    echo "  2. 网络连接问题"
+    echo "  3. 需要认证但未提供凭据"
+    echo "  4. Docker daemon 问题"
+    
+    # 尝试拉取 latest 标签作为备选
+    echo "🔄 尝试拉取 latest 标签..."
+    FALLBACK_TAG=$(echo "$IMAGE_TAG" | sed 's/:.*/:latest/')
+    if [ "$FALLBACK_TAG" != "$IMAGE_TAG" ]; then
+        docker pull "$FALLBACK_TAG" || echo "备选镜像也拉取失败"
+    fi
+    
     exit 1
 fi
 

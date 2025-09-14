@@ -216,7 +216,17 @@ jobs:
 
             # 执行部署（带实时输出）
             echo "🚀 开始执行部署脚本..."
-            ./deploy-production.sh "${{ needs.build-and-push.outputs.image-tag }}" 2>&1 | while IFS= read -r line; do
+            echo "📋 可用的镜像标签: ${{ needs.build-and-push.outputs.image-tag }}"
+
+            # 从多个标签中选择第一个包含版本号的标签
+            IMAGE_TAG=$(echo "${{ needs.build-and-push.outputs.image-tag }}" | tr ',' '\n' | grep -E ":[0-9]" | head -1)
+            if [ -z "$IMAGE_TAG" ]; then
+              # 如果没有版本标签，使用第一个标签
+              IMAGE_TAG=$(echo "${{ needs.build-and-push.outputs.image-tag }}" | tr ',' '\n' | head -1)
+            fi
+
+            echo "🎯 选择的镜像标签: $IMAGE_TAG"
+            ./deploy-production.sh "$IMAGE_TAG" 2>&1 | while IFS= read -r line; do
               echo "[$(date '+%H:%M:%S')] $line"
             done
 
