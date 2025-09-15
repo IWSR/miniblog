@@ -1,10 +1,11 @@
-# 1.0.0 (2025-09-14)
+# 1.0.0 (2025-09-15)
 
 
 ### Bug Fixes
 
 * **ci:** resolve GitHub Actions Docker tag and lint issues ([e914e18](https://github.com/onexstack/miniblog/commit/e914e18f613e74fb0ab04a6336728f87e26dc222))
 * improve production deployment script with better error handling ([c62eddd](https://github.com/onexstack/miniblog/commit/c62edddb26b4cf3a2bf73ca4c275c25345f46812))
+* 修复镜像标签传递和拉取问题 ([7b9d0e6](https://github.com/onexstack/miniblog/commit/7b9d0e6598c1e4c041dea4b93842ac26ca14ce69))
 * 移除不兼容的docker pull --progress参数 ([fe8eda9](https://github.com/onexstack/miniblog/commit/fe8eda9a599c501c0d5653f1bef9c5af30e60609))
 * 简化安全扫描 ([dfaf20b](https://github.com/onexstack/miniblog/commit/dfaf20b80f41145c425dd3e2f71439040cda7379))
 * 触发分支修改回master ([83d8163](https://github.com/onexstack/miniblog/commit/83d8163032c0c9c11afdc6a2ca86f4bca6e634f0))
@@ -27,6 +28,7 @@
 * 基于Gin实现HTTP服务器 ([bedbb9a](https://github.com/onexstack/miniblog/commit/bedbb9afc0f76a7c1ae28013b11ce3fa213493a8))
 * 增加Gin中间件支持 ([dee77ed](https://github.com/onexstack/miniblog/commit/dee77edb4bbd4392c2475f251659eef00f5f7e30))
 * 增加请求参数校验功能 ([2825c10](https://github.com/onexstack/miniblog/commit/2825c109208697a01351051f402664dc281a301a))
+* 大幅优化部署流程，解决镜像拉取超时问题 ([eea7673](https://github.com/onexstack/miniblog/commit/eea7673090acf8308fe3330a7957f1928fc092b7))
 * 定义简洁架构Store层的数据类型 ([052cd50](https://github.com/onexstack/miniblog/commit/052cd500cec3984709b3e568fe94b7aad1940ffb))
 * 实现gRPC服务器 ([e0fd89b](https://github.com/onexstack/miniblog/commit/e0fd89b036ab07af8df4388a40343fa0db07ba65))
 * 实现HTTPS通信功能 ([bbb20a7](https://github.com/onexstack/miniblog/commit/bbb20a73de8aea1b395831ade1f9ad486b9197c3))
