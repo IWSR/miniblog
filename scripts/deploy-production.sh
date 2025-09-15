@@ -23,12 +23,31 @@ docker network create $NETWORK_NAME 2>/dev/null || echo "ℹ️  网络已存在
 
 # 启动MariaDB（如果不存在）
 if ! docker ps --format "{{.Names}}" | grep -q "^${DB_CONTAINER}$"; then
-    echo "🗄️  启动MariaDB容器..."
+    echo "🗄️  准备启动MariaDB容器..."
+    
+    # 先拉取MariaDB镜像
+    echo "📥 拉取MariaDB镜像..."
+    if docker pull mariadb:10.11; then
+        echo "✅ MariaDB镜像拉取成功"
+    else
+        echo "❌ MariaDB镜像拉取失败，尝试使用latest版本"
+        if docker pull mariadb:latest; then
+            echo "✅ MariaDB latest镜像拉取成功"
+            MARIADB_TAG="mariadb:latest"
+        else
+            echo "❌ MariaDB镜像拉取完全失败"
+            exit 1
+        fi
+    fi
+    
+    # 如果没有设置备用标签，使用原版本
+    MARIADB_TAG=${MARIADB_TAG:-"mariadb:10.11"}
     
     # 先清理可能存在的同名容器
     docker rm -f $DB_CONTAINER 2>/dev/null || true
     
     # 启动数据库容器
+    echo "🚀 启动MariaDB容器 ($MARIADB_TAG)..."
     if docker run -d \
         --name $DB_CONTAINER \
         --network $NETWORK_NAME \
@@ -39,7 +58,7 @@ if ! docker ps --format "{{.Names}}" | grep -q "^${DB_CONTAINER}$"; then
         -p 3306:3306 \
         -v miniblog-db-data:/var/lib/mysql \
         --restart unless-stopped \
-        mariadb:10.11; then
+        $MARIADB_TAG; then
         echo "✅ MariaDB 容器启动命令执行成功"
     else
         echo "❌ MariaDB 容器启动命令失败"
