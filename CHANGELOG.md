@@ -5,9 +5,11 @@
 
 * **ci:** resolve GitHub Actions Docker tag and lint issues ([e914e18](https://github.com/onexstack/miniblog/commit/e914e18f613e74fb0ab04a6336728f87e26dc222))
 * improve production deployment script with better error handling ([c62eddd](https://github.com/onexstack/miniblog/commit/c62edddb26b4cf3a2bf73ca4c275c25345f46812))
+* 修复部署脚本错误处理逻辑 ([6d90245](https://github.com/onexstack/miniblog/commit/6d90245514f332ebe96ab355970d78fb8c9bed77))
 * 修复镜像标签传递和拉取问题 ([7b9d0e6](https://github.com/onexstack/miniblog/commit/7b9d0e6598c1e4c041dea4b93842ac26ca14ce69))
 * 移除不兼容的docker pull --progress参数 ([fe8eda9](https://github.com/onexstack/miniblog/commit/fe8eda9a599c501c0d5653f1bef9c5af30e60609))
 * 简化安全扫描 ([dfaf20b](https://github.com/onexstack/miniblog/commit/dfaf20b80f41145c425dd3e2f71439040cda7379))
+* 简化部署脚本，移除复杂逻辑 ([0a0f5bd](https://github.com/onexstack/miniblog/commit/0a0f5bd15fd29394cab3a84c0a92bdd97c90a1e2))
 * 触发分支修改回master ([83d8163](https://github.com/onexstack/miniblog/commit/83d8163032c0c9c11afdc6a2ca86f4bca6e634f0))
 
 
