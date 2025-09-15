@@ -1,10 +1,12 @@
-# 1.0.0 (2025-09-15)
+# [1.0.0](https://github.com/onexstack/miniblog/compare/v1.0.1...v1.0.0) (2025-09-15)
 
 
 ### Bug Fixes
 
 * **ci:** resolve GitHub Actions Docker tag and lint issues ([e914e18](https://github.com/onexstack/miniblog/commit/e914e18f613e74fb0ab04a6336728f87e26dc222))
 * improve production deployment script with better error handling ([c62eddd](https://github.com/onexstack/miniblog/commit/c62edddb26b4cf3a2bf73ca4c275c25345f46812))
+* 修复MariaDB容器启动超时问题 ([07e9350](https://github.com/onexstack/miniblog/commit/07e935073b94043ed33582253e70c4099c837920))
+* 修复MariaDB镜像拉取失败问题 ([b93fca8](https://github.com/onexstack/miniblog/commit/b93fca87b43ac50a32eb8613b1dd4a5931acd2a4))
 * 修复数据库初始化和应用启动配置 ([b21466b](https://github.com/onexstack/miniblog/commit/b21466bc5a0a2a8e1207885d2800d7b235f93013))
 * 修复部署脚本错误处理逻辑 ([6d90245](https://github.com/onexstack/miniblog/commit/6d90245514f332ebe96ab355970d78fb8c9bed77))
 * 修复镜像标签传递和拉取问题 ([7b9d0e6](https://github.com/onexstack/miniblog/commit/7b9d0e6598c1e4c041dea4b93842ac26ca14ce69))
