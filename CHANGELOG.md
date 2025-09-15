@@ -1,6 +1,10 @@
 # [1.0.0](https://github.com/onexstack/miniblog/compare/v1.0.1...v1.0.0) (2025-09-15)
 
 
+
+## [1.0.1](https://github.com/onexstack/miniblog/compare/f52c7bdaf1cdc6bcab31ea038f0fea468967c559...v1.0.1) (2025-09-15)
+
+
 ### Bug Fixes
 
 * **ci:** resolve GitHub Actions Docker tag and lint issues ([e914e18](https://github.com/onexstack/miniblog/commit/e914e18f613e74fb0ab04a6336728f87e26dc222))
@@ -10,6 +14,7 @@
 * 修复数据库初始化和应用启动配置 ([b21466b](https://github.com/onexstack/miniblog/commit/b21466bc5a0a2a8e1207885d2800d7b235f93013))
 * 修复部署脚本错误处理逻辑 ([6d90245](https://github.com/onexstack/miniblog/commit/6d90245514f332ebe96ab355970d78fb8c9bed77))
 * 修复镜像标签传递和拉取问题 ([7b9d0e6](https://github.com/onexstack/miniblog/commit/7b9d0e6598c1e4c041dea4b93842ac26ca14ce69))
+* 切换到内存模式部署，避免MariaDB网络问题 ([86ae5f8](https://github.com/onexstack/miniblog/commit/86ae5f8f25b5e3685035fc2df7b0443d108c60bd))
 * 移除不兼容的docker pull --progress参数 ([fe8eda9](https://github.com/onexstack/miniblog/commit/fe8eda9a599c501c0d5653f1bef9c5af30e60609))
 * 简化安全扫描 ([dfaf20b](https://github.com/onexstack/miniblog/commit/dfaf20b80f41145c425dd3e2f71439040cda7379))
 * 简化部署脚本，移除复杂逻辑 ([0a0f5bd](https://github.com/onexstack/miniblog/commit/0a0f5bd15fd29394cab3a84c0a92bdd97c90a1e2))
@@ -47,6 +52,7 @@
 * 实现认证功能 ([0cb2f72](https://github.com/onexstack/miniblog/commit/0cb2f72f9130d7e95c1a19aecf13965d653a0da0))
 * 实现运行时代码 ([58eaf44](https://github.com/onexstack/miniblog/commit/58eaf44bbc0d29685f8516212d10630b6734bf14))
 * 实现配置功能 ([cca39b7](https://github.com/onexstack/miniblog/commit/cca39b7b7ff9c7fcafe5bac0e329d17d029a32b1))
+* 强化MariaDB部署方案，解决镜像拉取问题 ([9cd943f](https://github.com/onexstack/miniblog/commit/9cd943f267be593fc4cea0207de989591a89528a))
 * 支持优雅关停功能 ([34bd1f1](https://github.com/onexstack/miniblog/commit/34bd1f170ea647009b9427eedf2094300b02f860))
 * 支持错误码 ([132fb7a](https://github.com/onexstack/miniblog/commit/132fb7a083a9d89011f1a62b383661219d753dc7))
 * 支持默认值设置功能 ([a66f42f](https://github.com/onexstack/miniblog/commit/a66f42f1f20c40826c59612f2138d30d7def8dec))
