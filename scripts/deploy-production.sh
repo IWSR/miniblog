@@ -22,9 +22,14 @@ echo "🌐 创建Docker网络..."
 docker network create $NETWORK_NAME 2>/dev/null || echo "ℹ️  网络已存在"
 
 # 启动MariaDB（如果不存在）
-if ! docker ps | grep -q $DB_CONTAINER; then
+if ! docker ps --format "{{.Names}}" | grep -q "^${DB_CONTAINER}$"; then
     echo "🗄️  启动MariaDB容器..."
-    docker run -d \
+    
+    # 先清理可能存在的同名容器
+    docker rm -f $DB_CONTAINER 2>/dev/null || true
+    
+    # 启动数据库容器
+    if docker run -d \
         --name $DB_CONTAINER \
         --network $NETWORK_NAME \
         -e MYSQL_ROOT_PASSWORD=root123456 \
@@ -34,13 +39,26 @@ if ! docker ps | grep -q $DB_CONTAINER; then
         -p 3306:3306 \
         -v miniblog-db-data:/var/lib/mysql \
         --restart unless-stopped \
-        mariadb:10.11
+        mariadb:10.11; then
+        echo "✅ MariaDB 容器启动命令执行成功"
+    else
+        echo "❌ MariaDB 容器启动命令失败"
+        exit 1
+    fi
     
     echo "⏳ 等待数据库启动..."
-    sleep 30
+    sleep 10
+    
+    # 检查容器是否成功启动
+    if ! docker ps --format "{{.Names}}" | grep -q "^${DB_CONTAINER}$"; then
+        echo "❌ MariaDB 容器启动失败"
+        docker logs $DB_CONTAINER
+        exit 1
+    fi
     
     # 等待数据库就绪
-    for i in {1..60}; do
+    echo "🔍 等待数据库服务就绪..."
+    for i in {1..120}; do
         if docker exec $DB_CONTAINER mysqladmin ping -h localhost -u root -proot123456 --silent 2>/dev/null; then
             echo "✅ 数据库已就绪"
             
@@ -58,11 +76,13 @@ if ! docker ps | grep -q $DB_CONTAINER; then
             fi
             break
         fi
-        if [ $i -eq 60 ]; then
+        if [ $i -eq 120 ]; then
             echo "❌ 数据库启动超时"
+            echo "📋 数据库容器日志:"
+            docker logs --tail 20 $DB_CONTAINER
             exit 1
         fi
-        echo "⏳ 等待数据库响应... ($i/60)"
+        echo "⏳ 等待数据库响应... ($i/120)"
         sleep 1
     done
 else
