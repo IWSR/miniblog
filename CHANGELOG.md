@@ -5,6 +5,7 @@
 
 * **ci:** resolve GitHub Actions Docker tag and lint issues ([e914e18](https://github.com/onexstack/miniblog/commit/e914e18f613e74fb0ab04a6336728f87e26dc222))
 * improve production deployment script with better error handling ([c62eddd](https://github.com/onexstack/miniblog/commit/c62edddb26b4cf3a2bf73ca4c275c25345f46812))
+* 修复数据库初始化和应用启动配置 ([b21466b](https://github.com/onexstack/miniblog/commit/b21466bc5a0a2a8e1207885d2800d7b235f93013))
 * 修复部署脚本错误处理逻辑 ([6d90245](https://github.com/onexstack/miniblog/commit/6d90245514f332ebe96ab355970d78fb8c9bed77))
 * 修复镜像标签传递和拉取问题 ([7b9d0e6](https://github.com/onexstack/miniblog/commit/7b9d0e6598c1e4c041dea4b93842ac26ca14ce69))
 * 移除不兼容的docker pull --progress参数 ([fe8eda9](https://github.com/onexstack/miniblog/commit/fe8eda9a599c501c0d5653f1bef9c5af30e60609))
@@ -49,6 +50,7 @@
 * 支持默认值设置功能 ([a66f42f](https://github.com/onexstack/miniblog/commit/a66f42f1f20c40826c59612f2138d30d7def8dec))
 * 添加Bypass认证中间件（放通所有认证） ([75eeb90](https://github.com/onexstack/miniblog/commit/75eeb903297b273cfbf6beb304868f104716a15b))
 * 添加gRPC拦截器 ([87bd2fb](https://github.com/onexstack/miniblog/commit/87bd2fb80119633611b9384b0bd27def392b26c8))
+* 添加完整的MariaDB+应用部署支持 ([6724637](https://github.com/onexstack/miniblog/commit/672463730048d04c697ee608db8652ae11da31dd))
 * 添加日志包log ([f05e989](https://github.com/onexstack/miniblog/commit/f05e98994ada4a42767b1c1b1ae6ac630bac9c7c))
 * 添加生产环境部署脚本 ([9cb873c](https://github.com/onexstack/miniblog/commit/9cb873c284d6252e12a4c433ecd7a053ce4309db))
 * 第一次提交 ([f52c7bd](https://github.com/onexstack/miniblog/commit/f52c7bdaf1cdc6bcab31ea038f0fea468967c559))
