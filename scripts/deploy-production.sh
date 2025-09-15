@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -e  # 遇到错误立即退出
+# 不使用 set -e，手动处理关键错误
 
 # 获取镜像标签参数
 IMAGE_TAG=${1:-"latest"}
@@ -16,28 +16,39 @@ docker ps -a | grep miniblog || echo "ℹ️  当前没有 miniblog 容器"
 docker images | grep miniblog || echo "ℹ️  当前没有 miniblog 镜像"
 
 # 停止并删除现有容器（如果存在）
-if docker ps -q -f name=$CONTAINER_NAME; then
+RUNNING_CONTAINER=$(docker ps -q -f name=$CONTAINER_NAME)
+if [ ! -z "$RUNNING_CONTAINER" ]; then
     echo "🔄 停止现有容器..."
-    docker stop $CONTAINER_NAME
+    docker stop $CONTAINER_NAME || echo "⚠️  停止容器失败，继续执行"
 fi
 
-if docker ps -aq -f name=$CONTAINER_NAME; then
+EXISTING_CONTAINER=$(docker ps -aq -f name=$CONTAINER_NAME)
+if [ ! -z "$EXISTING_CONTAINER" ]; then
     echo "🗑️  删除现有容器..."
-    docker rm $CONTAINER_NAME
+    docker rm $CONTAINER_NAME || echo "⚠️  删除容器失败，继续执行"
 fi
 
 # 拉取最新镜像
 echo "📥 拉取镜像: $IMAGE_TAG"
-docker pull "$IMAGE_TAG"
-echo "✅ 镜像拉取成功"
+if docker pull "$IMAGE_TAG"; then
+    echo "✅ 镜像拉取成功"
+else
+    echo "❌ 镜像拉取失败"
+    exit 1
+fi
 
 # 启动新容器
 echo "🚀 启动新容器..."
-docker run -d \
+if docker run -d \
     --name $CONTAINER_NAME \
     --restart unless-stopped \
     -p $PORT:8080 \
-    $IMAGE_TAG
+    $IMAGE_TAG; then
+    echo "✅ 容器启动命令执行成功"
+else
+    echo "❌ 容器启动失败"
+    exit 1
+fi
 
 # 等待容器启动
 echo "⏳ 等待容器启动..."
