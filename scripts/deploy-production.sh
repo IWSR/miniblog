@@ -5,6 +5,8 @@
 # 获取镜像标签参数
 IMAGE_TAG=${1:-"latest"}
 CONTAINER_NAME="miniblog"
+DB_CONTAINER="miniblog-mariadb"
+NETWORK_NAME="miniblog-network"
 PORT=${PORT:-8080}
 
 echo "🚀 开始生产环境部署..."
@@ -15,21 +17,60 @@ echo "📋 当前Docker状态:"
 docker ps -a | grep miniblog || echo "ℹ️  当前没有 miniblog 容器"
 docker images | grep miniblog || echo "ℹ️  当前没有 miniblog 镜像"
 
-# 停止并删除现有容器（如果存在）
+# 创建Docker网络（如果不存在）
+echo "🌐 创建Docker网络..."
+docker network create $NETWORK_NAME 2>/dev/null || echo "ℹ️  网络已存在"
+
+# 启动MariaDB（如果不存在）
+if ! docker ps | grep -q $DB_CONTAINER; then
+    echo "🗄️  启动MariaDB容器..."
+    docker run -d \
+        --name $DB_CONTAINER \
+        --network $NETWORK_NAME \
+        -e MYSQL_ROOT_PASSWORD=root123456 \
+        -e MYSQL_DATABASE=miniblog \
+        -e MYSQL_USER=miniblog \
+        -e MYSQL_PASSWORD=miniblog1234 \
+        -p 3306:3306 \
+        -v miniblog-db-data:/var/lib/mysql \
+        --restart unless-stopped \
+        mariadb:10.11
+    
+    echo "⏳ 等待数据库启动..."
+    sleep 30
+    
+    # 等待数据库就绪
+    for i in {1..60}; do
+        if docker exec $DB_CONTAINER mysqladmin ping -h localhost -u root -proot123456 --silent 2>/dev/null; then
+            echo "✅ 数据库已就绪"
+            break
+        fi
+        if [ $i -eq 60 ]; then
+            echo "❌ 数据库启动超时"
+            exit 1
+        fi
+        echo "⏳ 等待数据库响应... ($i/60)"
+        sleep 1
+    done
+else
+    echo "✅ MariaDB容器已存在"
+fi
+
+# 停止并删除现有应用容器（如果存在）
 RUNNING_CONTAINER=$(docker ps -q -f name=$CONTAINER_NAME)
 if [ ! -z "$RUNNING_CONTAINER" ]; then
-    echo "🔄 停止现有容器..."
+    echo "🔄 停止现有应用容器..."
     docker stop $CONTAINER_NAME || echo "⚠️  停止容器失败，继续执行"
 fi
 
 EXISTING_CONTAINER=$(docker ps -aq -f name=$CONTAINER_NAME)
 if [ ! -z "$EXISTING_CONTAINER" ]; then
-    echo "🗑️  删除现有容器..."
+    echo "🗑️  删除现有应用容器..."
     docker rm $CONTAINER_NAME || echo "⚠️  删除容器失败，继续执行"
 fi
 
 # 拉取最新镜像
-echo "📥 拉取镜像: $IMAGE_TAG"
+echo "📥 拉取应用镜像: $IMAGE_TAG"
 if docker pull "$IMAGE_TAG"; then
     echo "✅ 镜像拉取成功"
 else
@@ -37,13 +78,46 @@ else
     exit 1
 fi
 
-# 启动新容器
-echo "🚀 启动新容器..."
+# 创建应用配置文件
+echo "📝 创建应用配置文件..."
+cat > /tmp/mb-apiserver.yaml << 'EOF'
+server-mode: grpc-gateway
+jwt-key: Rtg8BPKNEf2mB4mgvKONGPZZQSaJWNLijxR42qRgq0iBb5
+expiration: 2h
+enable-memory-store: false
+tls:
+  use-tls: false
+http:
+  addr: :5555
+grpc:
+  addr: :6666
+mysql:
+  addr: miniblog-mariadb:3306
+  username: miniblog
+  password: miniblog1234
+  database: miniblog
+  max-idle-connections: 50
+  max-open-connections: 100
+  max-connection-life-time: 10s
+  log-level: 2
+log:
+  disable-caller: false
+  disable-stacktrace: false
+  level: info
+  format: json
+  output-paths: [stdout]
+EOF
+
+# 启动新的应用容器
+echo "🚀 启动应用容器..."
 if docker run -d \
     --name $CONTAINER_NAME \
+    --network $NETWORK_NAME \
     --restart unless-stopped \
-    -p $PORT:8080 \
-    $IMAGE_TAG; then
+    -p $PORT:5555 \
+    -v /tmp/mb-apiserver.yaml:/etc/miniblog/mb-apiserver.yaml \
+    $IMAGE_TAG \
+    /opt/miniblog/bin/mb-apiserver --config=/etc/miniblog/mb-apiserver.yaml; then
     echo "✅ 容器启动命令执行成功"
 else
     echo "❌ 容器启动失败"
@@ -51,33 +125,47 @@ else
 fi
 
 # 等待容器启动
-echo "⏳ 等待容器启动..."
-sleep 3
+echo "⏳ 等待应用容器启动..."
+sleep 5
 
 # 检查容器状态
 if docker ps | grep -q $CONTAINER_NAME; then
-    echo "✅ 容器启动成功"
+    echo "✅ 应用容器启动成功"
     
     # 显示容器信息
     echo "📊 容器信息:"
+    echo "--- 应用容器 ---"
     docker ps --format "table {{.Names}}\t{{.Image}}\t{{.Status}}\t{{.Ports}}" | head -1
     docker ps --format "table {{.Names}}\t{{.Image}}\t{{.Status}}\t{{.Ports}}" | grep $CONTAINER_NAME
+    echo "--- 数据库容器 ---"
+    docker ps --format "table {{.Names}}\t{{.Image}}\t{{.Status}}\t{{.Ports}}" | grep $DB_CONTAINER
     
-    # 简单健康检查
-    echo "🔍 执行健康检查..."
-    sleep 2
-    if curl -f http://localhost:$PORT >/dev/null 2>&1; then
-        echo "✅ 应用健康检查通过"
-        echo "🌐 应用访问地址: http://localhost:$PORT"
-    else
-        echo "⚠️  健康检查未通过，但容器已启动"
-        echo "📋 容器日志:"
-        docker logs --tail 5 $CONTAINER_NAME
-    fi
+    # 健康检查
+    echo "🔍 执行应用健康检查..."
+    sleep 3
+    for i in {1..10}; do
+        if curl -f http://localhost:$PORT/healthz >/dev/null 2>&1; then
+            echo "✅ 应用健康检查通过"
+            echo "🌐 应用访问地址: http://localhost:$PORT"
+            break
+        fi
+        if [ $i -eq 10 ]; then
+            echo "⚠️  健康检查未通过，但容器已启动"
+            echo "📋 应用容器日志:"
+            docker logs --tail 10 $CONTAINER_NAME
+        else
+            echo "⏳ 等待应用响应... ($i/10)"
+            sleep 3
+        fi
+    done
     
-    echo "🎉 部署完成!"
+    echo "🎉 完整部署完成!"
+    echo "📊 部署摘要:"
+    echo "  - 数据库: MariaDB (端口 3306)"
+    echo "  - 应用: miniblog (端口 $PORT)"
+    echo "  - 网络: $NETWORK_NAME"
 else
-    echo "❌ 容器启动失败"
+    echo "❌ 应用容器启动失败"
     echo "📋 容器日志:"
     docker logs $CONTAINER_NAME 2>/dev/null || echo "无法获取容器日志"
     exit 1
