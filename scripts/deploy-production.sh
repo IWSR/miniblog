@@ -21,70 +21,44 @@ docker images | grep miniblog || echo "ℹ️  当前没有 miniblog 镜像"
 echo "🌐 创建Docker网络..."
 docker network create $NETWORK_NAME 2>/dev/null || echo "ℹ️  网络已存在"
 
-# 检查MariaDB镜像是否存在，如果不存在则尝试多种方式获取
+# 检查MariaDB镜像是否存在
 echo "🔍 检查MariaDB镜像..."
-if ! docker images | grep -q "mariadb"; then
-    echo "� Ma删riaDB镜像不存在，尝试拉取..."
-    
-    # 尝试多个镜像源和版本
-    MARIADB_IMAGES=(
-        "mariadb:10.11"
-        "mariadb:10.6"
-        "mariadb:latest"
-        "mysql:8.0"
-        "mysql:5.7"
-    )
-    
-    PULLED_IMAGE=""
-    for img in "${MARIADB_IMAGES[@]}"; do
-        echo "🔄 尝试拉取: $img"
-        if timeout 300 docker pull "$img"; then
-            echo "✅ 成功拉取: $img"
-            PULLED_IMAGE="$img"
-            break
-        else
-            echo "❌ 拉取失败: $img"
-        fi
-    done
-    
-    if [ -z "$PULLED_IMAGE" ]; then
-        echo "❌ 所有数据库镜像拉取都失败了"
-        echo "🔧 尝试手动解决方案..."
-        
-        # 检查是否有任何MySQL/MariaDB相关镜像
-        EXISTING_DB_IMAGE=$(docker images --format "{{.Repository}}:{{.Tag}}" | grep -E "(mysql|mariadb)" | head -1)
-        if [ ! -z "$EXISTING_DB_IMAGE" ]; then
-            echo "✅ 发现现有数据库镜像: $EXISTING_DB_IMAGE"
-            PULLED_IMAGE="$EXISTING_DB_IMAGE"
-        else
-            echo "❌ 无法获取任何数据库镜像，部署失败"
-            echo "💡 建议手动执行: docker pull mariadb:latest"
-            exit 1
-        fi
-    fi
+EXISTING_DB_IMAGE=$(docker images --format "{{.Repository}}:{{.Tag}}" | grep -E "(mysql|mariadb)" | head -1)
+
+if [ ! -z "$EXISTING_DB_IMAGE" ]; then
+    echo "✅ 发现现有数据库镜像: $EXISTING_DB_IMAGE"
+    PULLED_IMAGE="$EXISTING_DB_IMAGE"
 else
-    # 使用现有的MariaDB镜像
-    PULLED_IMAGE=$(docker images --format "{{.Repository}}:{{.Tag}}" | grep mariadb | head -1)
-    if [ -z "$PULLED_IMAGE" ]; then
-        PULLED_IMAGE=$(docker images --format "{{.Repository}}:{{.Tag}}" | grep mysql | head -1)
-    fi
-    echo "✅ 使用现有镜像: $PULLED_IMAGE"
+    echo "❌ 服务器上没有数据库镜像"
+    echo "🔧 由于服务器无法连接 Docker Hub，需要手动准备镜像"
+    echo ""
+    echo "解决方案："
+    echo "1. 在有网络的机器上执行："
+    echo "   docker pull mariadb:10.11"
+    echo "   docker save mariadb:10.11 > mariadb.tar"
+    echo ""
+    echo "2. 将 mariadb.tar 上传到服务器，然后执行："
+    echo "   docker load < mariadb.tar"
+    echo ""
+    echo "3. 或者配置 Docker 镜像代理/私有仓库"
+    echo ""
+    echo "4. 重新运行部署脚本"
+    echo ""
+    exit 1
 fi
 
 # 启动MariaDB容器
 if ! docker ps --format "{{.Names}}" | grep -q "^${DB_CONTAINER}$"; then
-    echo "🗄️  启动MariaDB容器..."
+    echo "�️  启动MariaDB容器...."
     
     # 先清理可能存在的同名容器
     docker rm -f $DB_CONTAINER 2>/dev/null || true
     
-    # 根据镜像类型设置不同的环境变量
+    # 根据镜像类型设置环境变量
     if echo "$PULLED_IMAGE" | grep -q "mysql"; then
-        # MySQL镜像
-        ENV_VARS="-e MYSQL_ROOT_PASSWORD=root123456 -e MYSQL_DATABASE=miniblog -e MYSQL_USER=miniblog -e MYSQL_PASSWORD=miniblog1234"
+        echo "📝 使用MySQL镜像配置"
     else
-        # MariaDB镜像
-        ENV_VARS="-e MYSQL_ROOT_PASSWORD=root123456 -e MYSQL_DATABASE=miniblog -e MYSQL_USER=miniblog -e MYSQL_PASSWORD=miniblog1234"
+        echo "� 使用Maria动DB镜像配置"
     fi
     
     # 启动数据库容器
@@ -92,7 +66,10 @@ if ! docker ps --format "{{.Names}}" | grep -q "^${DB_CONTAINER}$"; then
     if docker run -d \
         --name $DB_CONTAINER \
         --network $NETWORK_NAME \
-        $ENV_VARS \
+        -e MYSQL_ROOT_PASSWORD=root123456 \
+        -e MYSQL_DATABASE=miniblog \
+        -e MYSQL_USER=miniblog \
+        -e MYSQL_PASSWORD=miniblog1234 \
         -p 3306:3306 \
         -v miniblog-db-data:/var/lib/mysql \
         --restart unless-stopped \
@@ -147,6 +124,7 @@ if ! docker ps --format "{{.Names}}" | grep -q "^${DB_CONTAINER}$"; then
     done
 else
     echo "✅ MariaDB容器已存在并运行中"
+    PULLED_IMAGE=$(docker inspect $DB_CONTAINER --format='{{.Config.Image}}')
 fi
 
 # 停止并删除现有应用容器（如果存在）
