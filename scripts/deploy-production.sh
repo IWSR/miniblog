@@ -43,6 +43,19 @@ if ! docker ps | grep -q $DB_CONTAINER; then
     for i in {1..60}; do
         if docker exec $DB_CONTAINER mysqladmin ping -h localhost -u root -proot123456 --silent 2>/dev/null; then
             echo "✅ 数据库已就绪"
+            
+            # 初始化数据库表结构（仅在首次启动时）
+            echo "📝 检查数据库表结构..."
+            TABLE_COUNT=$(docker exec $DB_CONTAINER mysql -u root -proot123456 -e "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='miniblog';" -s -N)
+            if [ "$TABLE_COUNT" -eq "0" ]; then
+                echo "📝 初始化数据库表结构..."
+                # 下载SQL文件并初始化
+                curl -fsSL https://raw.githubusercontent.com/IWSR/miniblog/master/configs/miniblog.sql -o /tmp/miniblog.sql
+                docker exec -i $DB_CONTAINER mysql -u root -proot123456 < /tmp/miniblog.sql
+                echo "✅ 数据库初始化完成"
+            else
+                echo "✅ 数据库表结构已存在，跳过初始化"
+            fi
             break
         fi
         if [ $i -eq 60 ]; then
@@ -115,9 +128,9 @@ if docker run -d \
     --network $NETWORK_NAME \
     --restart unless-stopped \
     -p $PORT:5555 \
-    -v /tmp/mb-apiserver.yaml:/etc/miniblog/mb-apiserver.yaml \
+    -v /tmp/mb-apiserver.yaml:/opt/miniblog/mb-apiserver.yaml \
     $IMAGE_TAG \
-    /opt/miniblog/bin/mb-apiserver --config=/etc/miniblog/mb-apiserver.yaml; then
+    --config=/opt/miniblog/mb-apiserver.yaml; then
     echo "✅ 容器启动命令执行成功"
 else
     echo "❌ 容器启动失败"
