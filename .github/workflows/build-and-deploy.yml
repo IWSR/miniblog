@@ -205,8 +205,8 @@ jobs:
           username: ${{ secrets.PROD_SERVER_USER }}
           key: ${{ secrets.PROD_SERVER_SSH_KEY }}
           port: ${{ secrets.PROD_SERVER_PORT }}
-          timeout: 1800s
-          command_timeout: 1800s
+          timeout: 3600s
+          command_timeout: 3600s
           script: |
             # 下载部署脚本
             echo "📥 下载部署脚本..."
@@ -226,6 +226,12 @@ jobs:
             fi
 
             echo "🎯 选择的镜像标签: $IMAGE_TAG"
+
+            # 登录到 GitHub Container Registry
+            echo "🔐 登录到 GitHub Container Registry..."
+            echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+
+            # 执行部署
             ./deploy-production.sh "$IMAGE_TAG" 2>&1 | while IFS= read -r line; do
               echo "[$(date '+%H:%M:%S')] $line"
             done

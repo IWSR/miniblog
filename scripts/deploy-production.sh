@@ -38,33 +38,62 @@ else
     echo "  ❌ 网络连接失败"
 fi
 
-# 检查是否为公开镜像，如果是私有镜像可能需要认证
+# 拉取镜像（带重试机制）
 echo "📥 开始拉取镜像: $IMAGE_TAG"
-docker pull "$IMAGE_TAG" 2>&1 | tee /tmp/docker_pull.log
 
-if [ ${PIPESTATUS[0]} -eq 0 ]; then
-    echo "✅ 镜像拉取成功"
+# 重试拉取镜像
+PULL_SUCCESS=false
+for attempt in {1..3}; do
+    echo "🔄 拉取尝试 $attempt/3..."
+    
+    # 设置超时并拉取镜像
+    timeout 1200 docker pull "$IMAGE_TAG" 2>&1 | tee /tmp/docker_pull_$attempt.log
+    
+    if [ ${PIPESTATUS[0]} -eq 0 ]; then
+        echo "✅ 镜像拉取成功 (尝试 $attempt)"
+        PULL_SUCCESS=true
+        break
+    else
+        echo "❌ 拉取尝试 $attempt 失败"
+        if [ $attempt -lt 3 ]; then
+            echo "⏳ 等待 30 秒后重试..."
+            sleep 30
+        fi
+    fi
+done
+
+if [ "$PULL_SUCCESS" = true ]; then
     echo "📋 拉取后的镜像信息:"
     docker images | grep miniblog
 else
-    echo "❌ 镜像拉取失败"
+    echo "❌ 所有拉取尝试都失败了"
     echo "🔍 详细错误信息:"
-    cat /tmp/docker_pull.log
+    for i in {1..3}; do
+        if [ -f "/tmp/docker_pull_$i.log" ]; then
+            echo "--- 尝试 $i 的日志 ---"
+            tail -10 /tmp/docker_pull_$i.log
+        fi
+    done
     
     echo "🔍 可能的原因:"
-    echo "  1. 镜像不存在或标签错误"
-    echo "  2. 网络连接问题"
-    echo "  3. 需要认证但未提供凭据"
-    echo "  4. Docker daemon 问题"
+    echo "  1. 网络速度太慢，超过20分钟超时"
+    echo "  2. 镜像体积过大"
+    echo "  3. 服务器资源不足"
+    echo "  4. GitHub Container Registry 限流"
     
     # 尝试拉取 latest 标签作为备选
-    echo "🔄 尝试拉取 latest 标签..."
+    echo "🔄 尝试拉取 latest 标签作为备选..."
     FALLBACK_TAG=$(echo "$IMAGE_TAG" | sed 's/:.*/:latest/')
     if [ "$FALLBACK_TAG" != "$IMAGE_TAG" ]; then
-        docker pull "$FALLBACK_TAG" || echo "备选镜像也拉取失败"
+        timeout 600 docker pull "$FALLBACK_TAG" && PULL_SUCCESS=true || echo "备选镜像也拉取失败"
     fi
     
-    exit 1
+    if [ "$PULL_SUCCESS" != true ]; then
+        exit 1
+    else
+        IMAGE_TAG="$FALLBACK_TAG"
+        echo "✅ 使用备选镜像: $IMAGE_TAG"
+    fi
 fi
 
 # 启动新容器
