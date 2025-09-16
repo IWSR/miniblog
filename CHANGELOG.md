@@ -1,8 +1,4 @@
-# [1.0.0](https://github.com/onexstack/miniblog/compare/v1.0.1...v1.0.0) (2025-09-15)
-
-
-
-## [1.0.1](https://github.com/onexstack/miniblog/compare/f52c7bdaf1cdc6bcab31ea038f0fea468967c559...v1.0.1) (2025-09-15)
+# [1.0.0](https://github.com/onexstack/miniblog/compare/v1.0.1...v1.0.0) (2025-09-16)
 
 
 ### Bug Fixes
@@ -16,6 +12,7 @@
 * 修复镜像标签传递和拉取问题 ([7b9d0e6](https://github.com/onexstack/miniblog/commit/7b9d0e6598c1e4c041dea4b93842ac26ca14ce69))
 * 切换到内存模式部署，避免MariaDB网络问题 ([86ae5f8](https://github.com/onexstack/miniblog/commit/86ae5f8f25b5e3685035fc2df7b0443d108c60bd))
 * 移除不兼容的docker pull --progress参数 ([fe8eda9](https://github.com/onexstack/miniblog/commit/fe8eda9a599c501c0d5653f1bef9c5af30e60609))
+* 简化MariaDB部署，提供离线镜像解决方案 ([44626d1](https://github.com/onexstack/miniblog/commit/44626d1133847ae72cf81bef998110daf93ccb7b))
 * 简化安全扫描 ([dfaf20b](https://github.com/onexstack/miniblog/commit/dfaf20b80f41145c425dd3e2f71439040cda7379))
 * 简化部署脚本，移除复杂逻辑 ([0a0f5bd](https://github.com/onexstack/miniblog/commit/0a0f5bd15fd29394cab3a84c0a92bdd97c90a1e2))
 * 触发分支修改回master ([83d8163](https://github.com/onexstack/miniblog/commit/83d8163032c0c9c11afdc6a2ca86f4bca6e634f0))
@@ -32,6 +29,7 @@
 * update ([a19fa68](https://github.com/onexstack/miniblog/commit/a19fa6894605cfe96278919e3c949565883af2f0))
 * update README.md ([348d333](https://github.com/onexstack/miniblog/commit/348d333827cbf9d2dea7b2715c682f11864517b2))
 * Wire依赖注入实现 ([2c8cfe4](https://github.com/onexstack/miniblog/commit/2c8cfe42ad90208855622d9c108286ecb27d4096))
+* 优化MariaDB镜像获取逻辑 ([1bf11d5](https://github.com/onexstack/miniblog/commit/1bf11d5b886a437aefed9f11ded5e9e852dfa0a1))
 * 优化部署流程，增加实时进度显示和超时时间 ([eb06c26](https://github.com/onexstack/miniblog/commit/eb06c26bbc78418fa5f4bb62ac4e72e088b543e7))
 * 创建Cobra应用程序 ([895c4d9](https://github.com/onexstack/miniblog/commit/895c4d9ab4146f9d387058723468336177a901fb))
 * 初始化Go项目 ([52161bb](https://github.com/onexstack/miniblog/commit/52161bb188415dfe65c9b7242794ec2b6c4ac58d))
