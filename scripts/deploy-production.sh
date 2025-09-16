@@ -21,30 +21,36 @@ docker images | grep miniblog || echo "ℹ️  当前没有 miniblog 镜像"
 echo "🌐 创建Docker网络..."
 docker network create $NETWORK_NAME 2>/dev/null || echo "ℹ️  网络已存在"
 
-# 检查MariaDB镜像是否存在
-echo "🔍 检查MariaDB镜像..."
-EXISTING_DB_IMAGE=$(docker images --format "{{.Repository}}:{{.Tag}}" | grep -E "(mysql|mariadb)" | head -1)
-
-if [ ! -z "$EXISTING_DB_IMAGE" ]; then
-    echo "✅ 发现现有数据库镜像: $EXISTING_DB_IMAGE"
-    PULLED_IMAGE="$EXISTING_DB_IMAGE"
+# 获取MariaDB镜像
+echo "� 拉取MaariaDB镜像..."
+if docker pull mariadb:10.11; then
+    echo "✅ MariaDB镜像拉取成功"
+    PULLED_IMAGE="mariadb:10.11"
 else
-    echo "❌ 服务器上没有数据库镜像"
-    echo "🔧 由于服务器无法连接 Docker Hub，需要手动准备镜像"
-    echo ""
-    echo "解决方案："
-    echo "1. 在有网络的机器上执行："
-    echo "   docker pull mariadb:10.11"
-    echo "   docker save mariadb:10.11 > mariadb.tar"
-    echo ""
-    echo "2. 将 mariadb.tar 上传到服务器，然后执行："
-    echo "   docker load < mariadb.tar"
-    echo ""
-    echo "3. 或者配置 Docker 镜像代理/私有仓库"
-    echo ""
-    echo "4. 重新运行部署脚本"
-    echo ""
-    exit 1
+    echo "❌ MariaDB镜像拉取失败，检查现有镜像..."
+    EXISTING_DB_IMAGE=$(docker images --format "{{.Repository}}:{{.Tag}}" | grep -E "(mysql|mariadb)" | head -1)
+    
+    if [ ! -z "$EXISTING_DB_IMAGE" ]; then
+        echo "✅ 发现现有数据库镜像: $EXISTING_DB_IMAGE"
+        PULLED_IMAGE="$EXISTING_DB_IMAGE"
+    else
+        echo "❌ 服务器上没有数据库镜像"
+        echo "🔧 由于服务器无法连接 Docker Hub，需要手动准备镜像"
+        echo ""
+        echo "解决方案："
+        echo "1. 在有网络的机器上执行："
+        echo "   docker pull mariadb:10.11"
+        echo "   docker save mariadb:10.11 > mariadb.tar"
+        echo ""
+        echo "2. 将 mariadb.tar 上传到服务器，然后执行："
+        echo "   docker load < mariadb.tar"
+        echo ""
+        echo "3. 或者配置 Docker 镜像代理/私有仓库"
+        echo ""
+        echo "4. 重新运行部署脚本"
+        echo ""
+        exit 1
+    fi
 fi
 
 # 启动MariaDB容器
